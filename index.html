@@ -79,7 +79,7 @@
             <textarea id="cust-address" placeholder="လိပ်စာ" class="w-full text-sm p-2.5 border rounded-lg"></textarea>
             
             <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">🛵 အားနေသော Deli ရွေးရန်</label>
+                <label class="block text-xs font-bold text-gray-700 mb-1">🛵 Deli အခြေအနေ (Status ဖြင့်)</label>
                 <select id="deli-select" class="w-full text-sm p-2.5 border rounded-lg bg-white"></select>
             </div>
 
@@ -199,17 +199,27 @@
 
             renderAllMenus(availableMenus);
 
-            // status က 'Available' ဖြစ်တဲ့ Deli တွေကိုပဲ ရွေးချယ်လို့ရအောင် စစ်ထုတ်ခြင်း
+            // Deli အားလုံး၏ status (Available / Service Stop) ကိုပါ dropdown တွင် ပေါ်စေရန်
             const deliSelect = document.getElementById('deli-select');
             deliSelect.innerHTML = '';
-            const availableDeli = deliData.filter(d => d.status && d.status.toLowerCase() === 'available');
             
-            if (availableDeli.length === 0) {
-                deliSelect.innerHTML = `<option value="">လက်တလော အားနေသော Deli မရှိပါ။</option>`;
+            if (deliData.length === 0) {
+                deliSelect.innerHTML = `<option value="">Deli Data မရှိပါ။</option>`;
             } else {
-                availableDeli.forEach(d => {
+                deliData.forEach(d => {
                     const price = parseInt(d.price) || 0;
-                    deliSelect.innerHTML += `<option value="${d.deli_name}" data-price="${price}" data-chatid="${d.chat_id || ''}">${d.deli_name} (${price.toLocaleString()} ကျပ်)</option>`;
+                    const status = d.status || 'Unknown';
+                    const isAvailable = status.toLowerCase() === 'available';
+                    
+                    // Service Stop ဖြစ်နေလျှင် ရွေးချယ်၍ မရအောင် disabled လုပ်ထားမည်၊ Status ကိုလည်း ပြልပေးမည်
+                    const statusText = isAvailable ? '🟢 Available' : '🔴 Service Stop';
+                    const disabledAttr = isAvailable ? '' : 'disabled class="text-gray-400 bg-gray-100"';
+                    
+                    deliSelect.innerHTML += `
+                        <option value="${d.deli_name}" data-price="${price}" data-chatid="${d.chat_id || ''}" data-status="${status}" ${disabledAttr}>
+                            ${d.deli_name} [${statusText}] (${price.toLocaleString()} ကျပ်)
+                        </option>
+                    `;
                 });
             }
         }
@@ -301,10 +311,13 @@
             const payMethod = document.getElementById('payment-method').value;
             const deliSelect = document.getElementById('deli-select');
             
-            if (!deliSelect.value) { alert("အားနေသော Deli မရှိပါ သို့မဟုတ် Deli ရွေးချယ်ပါ။"); return; }
+            const deliOpt = deliSelect.options[deliSelect.selectedIndex];
+            if (!deliOpt || deliOpt.disabled || !deliSelect.value) { 
+                alert("ကျေးဇူးပြု၍ အားနေသော (Available) Deli တစ်ခုကို ရွေးချယ်ပါ။"); 
+                return; 
+            }
             
             const deliName = deliSelect.value;
-            const deliOpt = deliSelect.options[deliSelect.selectedIndex];
             const deliFee = parseInt(deliOpt.getAttribute('data-price') || 0);
             const deliChatId = deliOpt.getAttribute('data-chatid') || '';
 
