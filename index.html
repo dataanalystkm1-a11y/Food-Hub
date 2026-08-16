@@ -51,7 +51,7 @@
             </div>
         </div>
 
-        <!-- 🛵 Deli Services Section (အောက်ဆုံးတွင် ထည့်သွင်းထားသည်) -->
+        <!-- 🛵 Deli Services Section -->
         <div class="mt-6 pt-4 border-t border-gray-200">
             <h2 class="text-base font-bold text-gray-800 mb-2">🛵 ချိတ်ဆက်ထားသော Deli Services များ</h2>
             <div id="deli-services-grid" class="grid grid-cols-1 gap-2.5">
@@ -87,7 +87,7 @@
             <textarea id="cust-address" placeholder="လိပ်စာ" class="w-full text-sm p-2.5 border rounded-lg"></textarea>
             
             <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">🛵 Deli အခြေအနေ (Status ဖြင့်)</label>
+                <label class="block text-xs font-bold text-gray-700 mb-1">🛵 Deli ရွေးချယ်ရန်</label>
                 <select id="deli-select" class="w-full text-sm p-2.5 border rounded-lg bg-white"></select>
             </div>
 
@@ -148,6 +148,13 @@
                 const deliText = await deliRes.text();
                 deliData = parseCSV(deliText);
 
+                // Priority အလိုက် ငယ်စဉ်ကြီးလိုက် (1, 2, 3...) Sort လုပ်ပေးခြင်း
+                deliData.sort((a, b) => {
+                    let pA = parseInt(a.priority) || 999;
+                    let pB = parseInt(b.priority) || 999;
+                    return pA - pB;
+                });
+
                 renderAppUI();
             } catch (err) {
                 console.error("Data fetch error:", err);
@@ -207,15 +214,16 @@
 
             renderAllMenus(availableMenus);
 
-            // Deli Dropdown နှင့် အောက်ဆုံးတွင်ပြမည့် Deli Services List ကိုပါ တစ်ပါတည်း Render လုပ်ခြင်း
+            // Deli Dropdown နှင့် Priority အလိုက် App အောက်ဆုံးတွင်ပြမည့် Deli Services List
             const deliSelect = document.getElementById('deli-select');
             const deliGrid = document.getElementById('deli-services-grid');
             
-            deliSelect.innerHTML = '';
+            // Default ရွေးခိုင်းသည့် Placeholder Option ကို အစဆုံးတွင် ထည့်ခြင်း
+            deliSelect.innerHTML = `<option value="" disabled selected>-- ကျေးဇူးပြု၍ Deli ရွေးချယ်ပါ --</option>`;
             deliGrid.innerHTML = '';
             
             if (deliData.length === 0) {
-                deliSelect.innerHTML = `<option value="">Deli Data မရှိပါ။</option>`;
+                deliSelect.innerHTML += `<option value="">Deli Data မရှိပါ။</option>`;
                 deliGrid.innerHTML = `<div class="text-gray-400 text-xs text-center py-2">Deli Data မရှိသေးပါ။</div>`;
             } else {
                 deliData.forEach(d => {
@@ -233,7 +241,7 @@
                         </option>
                     `;
 
-                    // App အောက်ဆုံးတွင် ပေါ်မည့် Deli Services Cards များ
+                    // Priority အတိုင်း အောက်ဆုံးတွင် ပေါ်မည့် Deli Services Cards များ
                     const statusBadgeClass = isAvailable ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-600 border-red-200';
                     deliGrid.innerHTML += `
                         <div class="bg-white rounded-xl shadow-sm p-3 border flex justify-between items-center text-xs">
@@ -242,7 +250,7 @@
                                     <i class="fa-solid fa-motorcycle"></i>
                                 </div>
                                 <div>
-                                    <h4 class="font-bold text-gray-800">${d.deli_name}</h4>
+                                    <h4 class="font-bold text-gray-800">${d.deli_name} <span class="text-[10px] text-gray-400">(Priority: ${d.priority || '-'})</span></h4>
                                     <p class="text-gray-500">နှုန်းထား: <span class="font-bold text-red-500">${price.toLocaleString()} ကျပ်</span></p>
                                 </div>
                             </div>
@@ -345,8 +353,10 @@
             const deliSelect = document.getElementById('deli-select');
             
             const deliOpt = deliSelect.options[deliSelect.selectedIndex];
-            if (!deliOpt || deliOpt.disabled || !deliSelect.value) { 
-                alert("ကျေးဇူးပြု၍ အားနေသော (Available) Deli တစ်ခုကို ရွေးချယ်ပါ။"); 
+            
+            // Customer မှ Deli တစ်ခုခုကို မရွေးရသေးပါက (သို့မဟုတ် Placeholder ကိုသာ ရွေးထားပါက) တားမည်
+            if (!deliSelect.value || !deliOpt || deliOpt.disabled) { 
+                alert("ကျေးဇူးပြု၍ သင့်လျော်သော Deli ဝန်ဆောင်မှုတစ်ခုကို ရွေးချယ်ပေးပါ။"); 
                 return; 
             }
             
