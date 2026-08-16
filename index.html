@@ -214,55 +214,78 @@
 
             renderAllMenus(availableMenus);
 
-            // Deli Dropdown နှင့် Priority အလိုက် App အောက်ဆုံးတွင်ပြမည့် Deli Services List
+            // Deli Dropdown ကို တစ်ကြိမ်သာ အစပိုင်းတွင် တည်ဆောက်ပေးခြင်း (အောက်ပါ renderDeliDropdown() သို့ ခွဲထုတ်လိုက်သည်)
+            renderDeliDropdown();
+            renderDeliCards();
+        }
+
+        // Deli Dropdown ကို သီးသန့်တည်ဆောက်ခြင်း (Cart Update တိုင်း Reset မဖြစ်စေရန်)
+        function renderDeliDropdown() {
             const deliSelect = document.getElementById('deli-select');
-            const deliGrid = document.getElementById('deli-services-grid');
+            // လက်တလော ရွေးထားတဲ့ တန်ဖိုးကို မှတ်ထားမည်
+            const currentSelected = deliSelect.value;
             
-            // Default ရွေးခိုင်းသည့် Placeholder Option ကို အစဆုံးတွင် ထည့်ခြင်း
             deliSelect.innerHTML = `<option value="" disabled selected>-- ကျေးဇူးပြု၍ Deli ရွေးချယ်ပါ --</option>`;
-            deliGrid.innerHTML = '';
             
             if (deliData.length === 0) {
                 deliSelect.innerHTML += `<option value="">Deli Data မရှိပါ။</option>`;
-                deliGrid.innerHTML = `<div class="text-gray-400 text-xs text-center py-2">Deli Data မရှိသေးပါ။</div>`;
             } else {
                 deliData.forEach(d => {
                     const price = parseInt(d.price) || 0;
                     const status = d.status || 'Unknown';
                     const isAvailable = status.toLowerCase() === 'available';
-                    
                     const statusText = isAvailable ? '🟢 Available' : '🔴 Service Stop';
                     const disabledAttr = isAvailable ? '' : 'disabled class="text-gray-400 bg-gray-100"';
                     
-                    // Dropdown options
                     deliSelect.innerHTML += `
                         <option value="${d.deli_name}" data-price="${price}" data-chatid="${d.chat_id || ''}" data-status="${status}" ${disabledAttr}>
                             ${d.deli_name} [${statusText}] (${price.toLocaleString()} ကျပ်)
                         </option>
                     `;
-
-                    // Priority အတိုင်း အောက်ဆုံးတွင် ပေါ်မည့် Deli Services Cards များ
-                    const statusBadgeClass = isAvailable ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-600 border-red-200';
-                    deliGrid.innerHTML += `
-                        <div class="bg-white rounded-xl shadow-sm p-3 border flex justify-between items-center text-xs">
-                            <div class="flex items-center space-x-2">
-                                <div class="bg-red-100 text-red-500 w-8 h-8 rounded-full flex items-center justify-center font-bold">
-                                    <i class="fa-solid fa-motorcycle"></i>
-                                </div>
-                                <div>
-                                    <h4 class="font-bold text-gray-800">${d.deli_name} <span class="text-[10px] text-gray-400">(Priority: ${d.priority || '-'})</span></h4>
-                                    <p class="text-gray-500">နှုန်းထား: <span class="font-bold text-red-500">${price.toLocaleString()} ကျပ်</span></p>
-                                </div>
-                            </div>
-                            <div>
-                                <span class="px-2 py-1 rounded-full text-[10px] font-bold border ${statusBadgeClass}">
-                                    ${statusText}
-                                </span>
-                            </div>
-                        </div>
-                    `;
                 });
             }
+            // အကယ်၍ ယခင်က ရွေးထားခဲ့တာရှိရင် ပြန်ဖော်ပေးရန်
+            if (currentSelected) {
+                deliSelect.value = currentSelected;
+            }
+        }
+
+        // အောက်ဆုံးတွင်ပြမည့် Deli Services List
+        function renderDeliCards() {
+            const deliGrid = document.getElementById('deli-services-grid');
+            deliGrid.innerHTML = '';
+            
+            if (deliData.length === 0) {
+                deliGrid.innerHTML = `<div class="text-gray-400 text-xs text-center py-2">Deli Data မရှိသေးပါ။</div>`;
+                return;
+            }
+
+            deliData.forEach(d => {
+                const price = parseInt(d.price) || 0;
+                const status = d.status || 'Unknown';
+                const isAvailable = status.toLowerCase() === 'available';
+                const statusText = isAvailable ? '🟢 Available' : '🔴 Service Stop';
+                const statusBadgeClass = isAvailable ? 'bg-green-50 text-green-600 border-green-200' : 'bg-red-50 text-red-600 border-red-200';
+                
+                deliGrid.innerHTML += `
+                    <div class="bg-white rounded-xl shadow-sm p-3 border flex justify-between items-center text-xs">
+                        <div class="flex items-center space-x-2">
+                            <div class="bg-red-100 text-red-500 w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-motorcycle"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-gray-800">${d.deli_name} <span class="text-[10px] text-gray-400">(Priority: ${d.priority || '-'})</span></h4>
+                                <p class="text-gray-500">နှုန်းထား: <span class="font-bold text-red-500">${price.toLocaleString()} ကျပ်</span></p>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="px-2 py-1 rounded-full text-[10px] font-bold border ${statusBadgeClass}">
+                                ${statusText}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
         }
 
         function renderAllMenus(items) {
@@ -343,7 +366,15 @@
             document.getElementById('cart-subtotal').innerText = `${subtotal.toLocaleString()} ကျပ်`;
         }
 
-        function toggleCartModal() { document.getElementById('cart-modal').classList.toggle('hidden'); updateCartUI(); }
+        function toggleCartModal() { 
+            const modal = document.getElementById('cart-modal');
+            modal.classList.toggle('hidden'); 
+            if (!modal.classList.contains('hidden')) {
+                // Modal ကိုဖွင့်တဲ့အခါ Deli Dropdown ကို အသစ်တဖန် စစ်ဆေးပေါ်ပြရန်
+                renderDeliDropdown();
+            }
+            updateCartUI(); 
+        }
 
         function handleCheckout() {
             const name = document.getElementById('cust-name').value;
