@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nway's Order App</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-bold mb-4 text-center text-pink-600">မုန့်မှာယူရန်</h2>
+        
+        <!-- Order Form -->
+        <form id="orderForm" class="space-y-4">
+            <div>
+                <label class="block text-gray-700 font-medium">ဆိုင်အမည် (Shop ID)</label>
+                <input type="number" id="shop_id" class="w-full border p-2 rounded" required>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-medium">ဆိုင်အမည် (Shop Name)</label>
+                <input type="text" id="shop_name" class="w-full border p-2 rounded" required>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-medium">ဖောက်သည်အမည် (Customer Name)</label>
+                <input type="text" id="customer_name" class="w-full border p-2 rounded" required>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-medium">ဖုန်းနံပါတ် (Phone)</label>
+                <input type="text" id="phone" class="w-full border p-2 rounded" required>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-medium">လိပ်စာ (Address)</label>
+                <textarea id="address" class="w-full border p-2 rounded" required></textarea>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-medium">မုန့် ID (Menu ID)</label>
+                <input type="number" id="menu_id" class="w-full border p-2 rounded" required>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-medium">မုန့်နာမည် (Menu Name)</label>
+                <input type="text" id="menu_name" class="w-full border p-2 rounded" required>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-medium">စုစုပေါင်းကျငွေ (Total Price)</label>
+                <input type="number" id="total_price" class="w-full border p-2 rounded" required>
+            </div>
+
+            <div>
+                <label class="block text-gray-700 font-medium">Deli ID</label>
+                <input type="number" id="deli_id" class="w-full border p-2 rounded" required>
+            </div>
+
+            <button type="submit" class="w-full bg-pink-600 text-white p-2 rounded font-bold hover:bg-pink-700">
+                Order တင်မည်
+            </button>
+        </form>
+    </div>
+
+    <!-- JavaScript for sending data to FastAPI -->
+    <script>
+        document.getElementById("orderForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+
+            const orderData = {
+                shop_id: parseInt(document.getElementById("shop_id").value),
+                shop_name: document.getElementById("shop_name").value,
+                customer_name: document.getElementById("customer_name").value,
+                phone: document.getElementById("phone").value,
+                address: document.getElementById("address").value,
+                menu_id: parseInt(document.getElementById("menu_id").value),
+                menu_name: document.getElementById("menu_name").value,
+                total_price: parseInt(document.getElementById("total_price").value),
+                deli_id: parseInt(document.getElementById("deli_id").value)
+            };
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/orders", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(orderData)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    alert("Order တင်ခြင်း အောင်မြင်ပါသည်။");
+                    document.getElementById("orderForm").reset();
+                } else {
+                    alert("Error: " + JSON.stringify(result));
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Server သို့ ချိတ်ဆက်၍ မရပါခင်ဗျာ။");
+            }
+        });
+    </script>
+</body>
+</html>
