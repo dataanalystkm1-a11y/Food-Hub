@@ -1,80 +1,107 @@
 <!DOCTYPE html>
-<html lang="my">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delivery App</title>
+    <title>Nway's Delivery App</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-gray-100 pb-12">
     <!-- Header -->
-    <header class="bg-rose-500 text-white p-4 shadow-md flex justify-between items-center">
-        <h1 class="text-xl font-bold">🍔 Delivery App</h1>
-        <button class="bg-white text-rose-500 px-4 py-2 rounded-full font-semibold shadow">🛒 ဈေးဝယ်ခြင်း</button>
+    <header class="bg-pink-600 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold">🍔 Nway's Delivery App</h1>
+        <button class="bg-white text-pink-600 px-4 py-2 rounded-full font-semibold shadow text-sm">🛒 ဈေးဝယ်ခြင်း</button>
     </header>
 
     <main class="max-w-md mx-auto p-4 space-y-6">
-        <!-- Popular Foods -->
+        <!-- Menus Section -->
         <section>
-            <h2 class="text-lg font-bold mb-3">🔥 လူကြိုက်များသော မုန့်များ</h2>
-            <div class="grid grid-cols-3 gap-3">
-                <div class="bg-white p-2 rounded-xl shadow">
-                    <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c" class="w-full h-24 object-cover rounded-lg">
-                    <h3 class="font-bold text-sm mt-1">ထမင်းသုပ်</h3>
-                    <p class="text-xs text-gray-500">မြန်မာမုန့်</p>
-                    <p class="text-rose-500 font-bold text-sm mt-1">3,500 ကျပ်</p>
-                    <button class="w-full bg-rose-500 text-white text-xs py-1 rounded mt-2">+ ထည့်မည်</button>
-                </div>
-                <div class="bg-white p-2 rounded-xl shadow">
-                    <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd" class="w-full h-24 object-cover rounded-lg">
-                    <h3 class="font-bold text-sm mt-1">ခေါက်ဆွဲသုပ်</h3>
-                    <p class="text-xs text-gray-500">မြန်မာမုန့်</p>
-                    <p class="text-rose-500 font-bold text-sm mt-1">2,000 ကျပ်</p>
-                    <button class="w-full bg-rose-500 text-white text-xs py-1 rounded mt-2">+ ထည့်မည်</button>
-                </div>
-                <div class="bg-white p-2 rounded-xl shadow">
-                    <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38" class="w-full h-24 object-cover rounded-lg">
-                    <h3 class="font-bold text-sm mt-1">အကြော်စုံ</h3>
-                    <p class="text-xs text-gray-500">အဆာပြေ</p>
-                    <p class="text-rose-500 font-bold text-sm mt-1">1,500 ကျပ်</p>
-                    <button class="w-full bg-rose-500 text-white text-xs py-1 rounded mt-2">+ ထည့်မည်</button>
-                </div>
+            <h2 class="text-lg font-bold mb-3 text-gray-800">🔥 လူကြိုက်များသော မုန့်များ</h2>
+            <div id="menuContainer" class="grid grid-cols-2 gap-3">
+                <p class="text-gray-500 text-sm">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </section>
 
-        <!-- Shops -->
+        <!-- Shops Section -->
         <section>
-            <h2 class="text-lg font-bold mb-3">🏪 ဆိုင်များ</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-white p-3 rounded-xl shadow text-center">
-                    <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5" class="w-16 h-16 object-cover rounded-full mx-auto">
-                    <h3 class="font-bold text-sm mt-2">မိန်မိန်</h3>
-                    <button class="text-rose-500 text-xs border border-rose-500 px-3 py-1 rounded-full mt-2">ကြည့်ရန်</button>
-                </div>
-                <div class="bg-white p-3 rounded-xl shadow text-center">
-                    <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4" class="w-16 h-16 object-cover rounded-full mx-auto">
-                    <h3 class="font-bold text-sm mt-2">ရွှေနဒီ Restaurent</h3>
-                    <button class="text-rose-500 text-xs border border-rose-500 px-3 py-1 rounded-full mt-2">ကြည့်ရန်</button>
-                </div>
+            <h2 class="text-lg font-bold mb-3 text-gray-800">🏪 ဆိုင်များ</h2>
+            <div id="shopContainer" class="grid grid-cols-2 gap-4">
+                <p class="text-gray-500 text-sm">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </section>
 
-        <!-- All Foods -->
+        <!-- Deli Services Section -->
         <section>
-            <h2 class="text-lg font-bold mb-3">🍽️ မုန့်အားလုံး</h2>
-            <div class="grid grid-cols-2 gap-3">
-                <div class="bg-white p-2 rounded-xl shadow">
-                    <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c" class="w-full h-28 object-cover rounded-lg">
-                    <h3 class="font-bold text-sm mt-1">လက်ဖက်ထမင်း</h3>
-                    <p class="text-xs text-gray-500">မြန်မာစာ</p>
-                </div>
-                <div class="bg-white p-2 rounded-xl shadow">
-                    <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd" class="w-full h-28 object-cover rounded-lg">
-                    <h3 class="font-bold text-sm mt-1">ထမင်းသုပ်</h3>
-                    <p class="text-xs text-gray-500">မြန်မာစာ</p>
-                </div>
+            <h2 class="text-lg font-bold mb-3 text-gray-800">🛵 ချိတ်ဆက်ထားသော Deli Services များ</h2>
+            <div id="deliContainer" class="space-y-2">
+                <p class="text-gray-500 text-sm">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </section>
     </main>
+
+    <!-- JavaScript to Fetch Data from Supabase -->
+    <script>
+        // Supabase Credentials (လိုအပ်ပါက ထည့်ရန်)
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function loadDashboardData() {
+            try {
+                // Menus Fetch
+                const menuRes = await _supabase.from('menus').select('*');
+                const menuContainer = document.getElementById('menuContainer');
+                if (menuRes.data && menuRes.data.length > 0) {
+                    menuContainer.innerHTML = menuRes.data.map(item => `
+                        <div class="bg-white p-3 rounded-xl shadow">
+                            <h3 class="font-bold text-sm text-gray-800">${item.menu_name || item.name || 'မုန့်နာမည်'}</h3>
+                            <p class="text-pink-600 font-bold text-sm mt-1">${item.price || 0} ကျပ်</p>
+                        </div>
+                    `).join('');
+                } else {
+                    menuContainer.innerHTML = `<p class="text-gray-500 text-xs">မုန့်ဒေတာ မရှိသေးပါ။</p>`;
+                }
+
+                // Shops Fetch
+                const shopRes = await _supabase.from('shops').select('*');
+                const shopContainer = document.getElementById('shopContainer');
+                if (shopRes.data && shopRes.data.length > 0) {
+                    shopContainer.innerHTML = shopRes.data.map(shop => `
+                        <div class="bg-white p-3 rounded-xl shadow text-center">
+                            <h3 class="font-bold text-sm text-gray-800">${shop.shop_name || shop.name || 'ဆိုင်နာမည်'}</h3>
+                            <button class="text-pink-600 text-xs border border-pink-600 px-3 py-1 rounded-full mt-2 hover:bg-pink-50">ကြည့်ရန်</button>
+                        </div>
+                    `).join('');
+                } else {
+                    shopContainer.innerHTML = `<p class="text-gray-500 text-xs">ဆိုင်ဒေတာ မရှိသေးပါ။</p>`;
+                }
+
+                // Deli Fetch
+                const deliRes = await _supabase.from('deli').select('*');
+                const deliContainer = document.getElementById('deliContainer');
+                if (deliRes.data && deliRes.data.length > 0) {
+                    deliContainer.innerHTML = deliRes.data.map(deli => `
+                        <div class="bg-white p-3 rounded-xl shadow flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold text-sm text-gray-800">${deli.deli_name || deli.name || 'Deli Name'}</h3>
+                                <p class="text-xs text-gray-500">ဖုန်း: ${deli.phone || '-'}</p>
+                            </div>
+                            <span class="bg-pink-100 text-pink-600 text-xs px-2 py-1 rounded">ချိတ်ဆက်ပြီး</span>
+                        </div>
+                    `).join('');
+                } else {
+                    deliContainer.innerHTML = `<p class="text-gray-500 text-xs">Deli ဒေတာ မရှိသေးပါ။</p>`;
+                }
+
+            } catch (err) {
+                console.error("Error fetching data:", err);
+            }
+        }
+
+        loadDashboardData();
+    </script>
 </body>
 </html>
