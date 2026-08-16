@@ -142,9 +142,9 @@
         </div>
     </div>
 
-    <!-- Direct Shop KPay Payment Modal (Updated with Copy & Slip Upload) -->
+    <!-- Direct Shop KPay Payment Modal -->
     <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-xl text-center max-h-[90vh] overflow-y-auto">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-4 shadow-xl text-center">
             <h3 class="font-bold text-base text-gray-800 border-b pb-2 flex items-center justify-center gap-1">
                 <span>📱 ဆိုင်သို့ တိုက်ရိုက် မုန့်ဖိုး ကြိုလွှဲရန်</span>
             </h3>
@@ -159,29 +159,20 @@
             <!-- QR Code Container -->
             <div id="pay-qr-container"></div>
 
-            <div class="bg-gray-50 p-3 rounded-xl border space-y-2 text-left text-xs">
+            <div class="bg-gray-50 p-3 rounded-xl border space-y-1 text-left text-xs">
                 <div class="flex justify-between items-center">
                     <span class="text-gray-500">ဆိုင်အမည်:</span>
                     <span id="pay-shop-name" class="font-bold text-gray-800"></span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-gray-500">KPay ဖုန်းနံပါတ်:</span>
-                    <div class="flex items-center space-x-1">
-                        <span id="pay-acc-number" class="font-bold text-blue-600 text-sm select-all"></span>
-                        <button onclick="copyKPayNumber()" class="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-[10px] font-bold hover:bg-blue-200">Copy</button>
-                    </div>
+                    <span id="pay-acc-number" class="font-bold text-blue-600 text-sm select-all"></span>
                 </div>
-            </div>
-
-            <!-- KPay Slip Upload Input -->
-            <div class="text-left space-y-1">
-                <label class="block text-xs font-bold text-gray-700">📸 ငွေလွှဲပြေစာ (Slip) တင်ပေးပါရန်</label>
-                <input type="file" id="kpay-slip" accept="image/*" class="w-full text-xs p-2 border border-gray-300 rounded-lg file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100">
             </div>
 
             <div class="flex space-x-2 pt-1">
                 <button onclick="closePaymentModal()" class="w-1/3 bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl text-xs">မလုပ်တော့ပါ</button>
-                <button id="confirm-pay-btn" onclick="confirmOrderAfterPayment()" class="w-2/3 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl text-xs shadow">ငွေလွှဲပြီးပါပြီ - အတည်ပြုမည်</button>
+                <button onclick="confirmOrderAfterPayment()" class="w-2/3 bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl text-xs shadow">ငွေလွှဲပြီးပါပြီ - အတည်ပြုမည်</button>
             </div>
         </div>
     </div>
@@ -551,7 +542,6 @@
             document.getElementById('pay-modal-amount').innerText = `${itemSubtotal.toLocaleString()} ကျပ်`;
             document.getElementById('pay-shop-name').innerText = firstShop;
             document.getElementById('pay-acc-number').innerText = shopKPayNo;
-            document.getElementById('kpay-slip').value = ""; // Clear file input
 
             const qrContainer = document.getElementById('pay-qr-container');
             if (shopInfo.kpay_qr_url && shopInfo.kpay_qr_url.trim() !== '') {
@@ -563,64 +553,41 @@
             document.getElementById('payment-modal').classList.remove('hidden');
         }
 
-        function copyKPayNumber() {
-            const numText = document.getElementById('pay-acc-number').innerText;
-            if (numText) {
-                navigator.clipboard.writeText(numText);
-                showToast("KPay ဖုန်းနံပါတ် Copy ကူးပြီးပါပြီ!");
-            }
-        }
-
         function closePaymentModal() {
             document.getElementById('payment-modal').classList.add('hidden');
         }
 
-        async function confirmOrderAfterPayment() {
-            const slipInput = document.getElementById('kpay-slip');
-            if (!slipInput.files || slipInput.files.length === 0) {
-                alert("ကျေးဇူးပြု၍ ငွေလွှဲပြေစာ (Slip) ဓာတ်ပုံ တင်ပေးပါရန်။");
-                return;
-            }
-
-            const confirmBtn = document.getElementById('confirm-pay-btn');
-            confirmBtn.innerText = "ခဏစောင့်ပါ...";
-            confirmBtn.disabled = true;
-
-            const file = slipInput.files[0];
-            pendingOrderData.slipFile = file;
-
+        function confirmOrderAfterPayment() {
             closePaymentModal();
-            await executeSubmitOrder();
-
-            confirmBtn.innerText = "ငွေလွှဲပြီးပါပြီ - အတည်ပြုမည်";
-            confirmBtn.disabled = false;
+            executeSubmitOrder(true); // KPay ဖြစ်ကြောင်း အမှတ်အသားပြုမည်
         }
 
-        async function executeSubmitOrder() {
+        async function executeSubmitOrder(isKPay = false) {
             if (!pendingOrderData) return;
             const data = pendingOrderData;
 
-            let text = `📦 **အော်ဒါအသစ် ရရှိပါသည်။**\n\n`;
+            // KPay သို့မဟုတ် COD အပေါ်မူတည်၍ Message ပြင်ခြင်း
+            let statusTitle = isKPay ? "⏳ **အော်ဒါအသစ် (ဆိုင်မှ KPay ငွေလွှဲ စစ်ရန်စောင့်ဆိုင်းနေဆဲ)**" : "📦 **အော်ဒါအသစ် (COD - တန်းပို့ရန်)**";
+            
+            let text = `${statusTitle}\n\n`;
             text += `👤 **အမည်:** ${data.name}\n📞 **ဖုန်း:** ${data.phone}\n📍 **လိပ်စာ:** ${data.address}\n`;
             text += `🛵 **Deli:** ${data.deliName}\n💳 **Payment:** ${data.payMethod}\n\n🛒 **မှာယူထားသည်များ:**\n`;
             data.cartItems.forEach(i => text += `- ${i.name} (${i.shop}) x ${i.qty} = ${(i.price * i.qty).toLocaleString()} ကျပ်\n`);
-            text += `\n💵 **မုန့်ဖိုး စုစုပေါင်း:** ${data.subtotal.toLocaleString()} ကျပ်\n🚚 **Deli ခ (အိမ်ရောက်မှ ပေးရန်):** ${data.deliFee.toLocaleString()} ကျပ်\n💰 **စုစုပေါင်း:** ${data.grandTotal.toLocaleString()} ကျပ်`;
+            text += `\n💵 **မုန့်ဖိုး စုစုပေါင်း:** ${data.subtotal.toLocaleString()} ကျပ်\n🚚 **Deli ခ (အိမ်ရောက်မှ ပေးရန်):** ${data.deliFee.toLocaleString()} ကျပ်\n💰 **စုစုပေါင်း:** ${data.grandTotal.toLocaleString()} ကျပ်\n\n`;
+
+            if (isKPay) {
+                text += `⚠️ **ဆိုင်သို့ သတိပေးချက်:** ဝယ်သူမှ KPay ကြိုလွှဲထားသည်ဟု ပို့ထားပါသည်။ မိမိ KPay Account ထဲသို့ မုန့်ဖိုး **${data.subtotal.toLocaleString()} ကျပ်** ဝင်မဝင် စစ်ဆေးပြီးမှ မုန့်စတင် ပြင်ဆင်ပေးပါရန်။`;
+            }
 
             const shopChatId = data.cartItems[0].chatId || DEFAULT_CHAT_ID;
 
-            // Telegram သို့ အော်ဒါအချက်အလက် ပို့ခြင်း (KPay Slip ပုံပါလျှင် ပုံပါတစ်ခါတည်းပို့မည်)
-            if (data.slipFile) {
-                await sendTelegramPhoto(data.slipFile, text, shopChatId);
-                if (data.deliChatId && data.deliChatId !== shopChatId) {
-                    await sendTelegramPhoto(data.slipFile, text, data.deliChatId);
-                }
-            } else {
-                await sendTelegram(text, shopChatId);
-                if (data.deliChatId && data.deliChatId !== shopChatId) {
-                    await sendTelegram(text, data.deliChatId);
-                }
+            // Telegram သို့ အကြောင်းကြားစာ ပို့ခြင်း
+            await sendTelegram(text, shopChatId);
+            if (data.deliChatId && data.deliChatId !== shopChatId) {
+                await sendTelegram(text, data.deliChatId);
             }
 
+            // Google Sheet သို့ စာရင်းသွင်းခြင်း
             const itemsStr = data.cartItems.map(i => `${i.name} x ${i.qty}`).join(', ');
             fetch(GOOGLE_WEBHOOK_URL, {
                 method: 'POST',
@@ -632,35 +599,27 @@
                 })
             });
 
-            alert("🎉 အော်ဒါ အတည်ပြုပြီးပါပြီ! ကျေးဇူးတင်ပါသည်။");
+            // ဝယ်သူထံ ပြသမည့် အသိပေးစာ
+            if (isKPay) {
+                alert("🎉 အော်ဒါကို ဆိုင်သို့ ပို့ဆောင်လိုက်ပါပြီ!\n\nဆိုင်မှ KPay ငွေဝင်မဝင် စစ်ဆေးပြီးပါက မုန့်စတင် ပြင်ဆင်ပေးပါလိမ့်မည်။ (လိုအပ်ပါက ဆိုင်မှ ဖုန်းဆက်ပါလိမ့်မည်)");
+            } else {
+                alert("🎉 အော်ဒါ အတည်ပြုပြီးပါပြီ! ပစ္စည်း ရောက်ရှိပါက မုန့်ဖိုး + Deli ခ ကို ပေးချေပေးပါရန်။ ကျေးဇူးတင်ပါသည်။");
+            }
+
+            // Cart ကို ပြန်ရှင်းခြင်း
             cart = [];
             pendingOrderData = null;
             updateCartUI();
             toggleCartModal();
             closeShopModal();
         }
-
+       
         async function sendTelegram(text, chatId) {
             try {
                 await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' })
-                });
-            } catch (e) { console.error(e); }
-        }
-
-        async function sendTelegramPhoto(file, caption, chatId) {
-            try {
-                const formData = new FormData();
-                formData.append('chat_id', chatId);
-                formData.append('photo', file);
-                formData.append('caption', caption);
-                formData.append('parse_mode', 'Markdown');
-
-                await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
-                    method: 'POST',
-                    body: formData
                 });
             } catch (e) { console.error(e); }
         }
