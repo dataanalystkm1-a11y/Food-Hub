@@ -77,7 +77,12 @@
             <input type="text" id="cust-name" placeholder="အမည်" class="w-full text-sm p-2.5 border rounded-lg">
             <input type="tel" id="cust-phone" placeholder="ဖုန်းနံပါတ်" class="w-full text-sm p-2.5 border rounded-lg">
             <textarea id="cust-address" placeholder="လိပ်စာ" class="w-full text-sm p-2.5 border rounded-lg"></textarea>
-            <select id="deli-select" class="w-full text-sm p-2.5 border rounded-lg bg-white"></select>
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">🛵 အားနေသော Deli ရွေးရန်</label>
+                <select id="deli-select" class="w-full text-sm p-2.5 border rounded-lg bg-white"></select>
+            </div>
+
             <select id="payment-method" class="w-full text-sm p-2.5 border rounded-lg bg-white">
                 <option value="KPay">📱 KBZ Pay (Screenshot တင်မည်)</option>
                 <option value="Cash on Delivery (COD)">💵 Cash on Delivery</option>
@@ -127,7 +132,6 @@
 
         async function loadSheetData() {
             try {
-                // Tab နာမည် 'Menu' နှင့် ချိန်ညှိထားပါသည်
                 const menuRes = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Menu`);
                 const menuText = await menuRes.text();
                 menuData = parseCSV(menuText);
@@ -195,13 +199,19 @@
 
             renderAllMenus(availableMenus);
 
+            // status က 'Available' ဖြစ်တဲ့ Deli တွေကိုပဲ ရွေးချယ်လို့ရအောင် စစ်ထုတ်ခြင်း
             const deliSelect = document.getElementById('deli-select');
             deliSelect.innerHTML = '';
-            const availableDeli = deliData.filter(d => !d.status || d.status.toLowerCase() === 'available');
-            availableDeli.forEach(d => {
-                const price = parseInt(d.price) || 0;
-                deliSelect.innerHTML += `<option value="${d.deli_name}" data-price="${price}" data-chatid="${d.chat_id || ''}">${d.deli_name} (${price.toLocaleString()} ကျပ်)</option>`;
-            });
+            const availableDeli = deliData.filter(d => d.status && d.status.toLowerCase() === 'available');
+            
+            if (availableDeli.length === 0) {
+                deliSelect.innerHTML = `<option value="">လက်တလော အားနေသော Deli မရှိပါ။</option>`;
+            } else {
+                availableDeli.forEach(d => {
+                    const price = parseInt(d.price) || 0;
+                    deliSelect.innerHTML += `<option value="${d.deli_name}" data-price="${price}" data-chatid="${d.chat_id || ''}">${d.deli_name} (${price.toLocaleString()} ကျပ်)</option>`;
+                });
+            }
         }
 
         function renderAllMenus(items) {
@@ -250,7 +260,7 @@
 
         function addToCart(name, shop, price, chatId) {
             const existing = cart.find(i => i.name === name && i.shop === shop);
-            if (existing) { existing.qty++; } else { cart.push({ name, shop, price: parseInt(price), qty: 1, chatId }); }
+            if (existing) { existing.qty++; } else { cart.push({ name, shop, price: parseInt(price), qty: 1, chatId: chatId ? chatId.trim() : '' }); }
             updateCartUI();
             showToast(`"${name}" ကို ထည့်ပြီးပါပြီ!`);
         }
@@ -290,6 +300,9 @@
             const address = document.getElementById('cust-address').value;
             const payMethod = document.getElementById('payment-method').value;
             const deliSelect = document.getElementById('deli-select');
+            
+            if (!deliSelect.value) { alert("အားနေသော Deli မရှိပါ သို့မဟုတ် Deli ရွေးချယ်ပါ။"); return; }
+            
             const deliName = deliSelect.value;
             const deliOpt = deliSelect.options[deliSelect.selectedIndex];
             const deliFee = parseInt(deliOpt.getAttribute('data-price') || 0);
@@ -342,18 +355,23 @@
         async function executeSubmitOrder(isKPay = false, base64 = null) {
             const data = pendingOrderData;
             let statusTitle = isKPay ? "⏳ **ငွေလွှဲစစ်ဆေးရန် အော်ဒါ (Pending KPay)**" : "📦 **အော်ဒါအသစ် (COD)**";
-            let text = `${statusTitle}\n\n👤 **အမည်:** ${data.name}\n📞 **ဖုန်း:** ${data.phone}\n📍 **လိပ်စာ:** ${data.address}\n🛵 **Deli:** ${data.deliName}\n\n🛒 **မှာယူသည်များ:**\n`;
+            
+            let text = `${statusTitle}\n\n🏪 **ဆိုင်နာမည်:** ${data.shopNames}\n👤 **အမည်:** ${data.name}\n📞 **ဖုန်း:** ${data.phone}\n📍 **လိပ်စာ:** ${data.address}\n🛵 **Deli:** ${data.deliName}\n\n🛒 **မှာယူသည်များ:**\n`;
             data.cartItems.forEach(i => text += `- ${i.name} x ${i.qty} = ${(i.price * i.qty).toLocaleString()} ကျပ်\n`);
             text += `\n💰 **စုစုပေါင်း:** ${data.grandTotal.toLocaleString()} ကျပ်`;
 
-            const shopChatId = data.cartItems[0].chatId || DEFAULT_CHAT_ID;
+            const targetChatId = (data.cartItems[0] && data.cartItems[0].chatId) ? data.cartItems[0].chatId : DEFAULT_CHAT_ID;
 
             if (isKPay && base64) {
-                await sendTelegramPhoto(base64, text, shopChatId);
-                if (data.deliChatId && data.deliChatId !== shopChatId) await sendTelegramPhoto(base64, text, data.deliChatId);
+                await sendTelegramPhoto(base64, text, targetChatId);
+                if (data.deliChatId && data.deliChatId !== targetChatId) {
+                    await sendTelegramPhoto(base64, text, data.deliChatId);
+                }
             } else {
-                await sendTelegram(text, shopChatId);
-                if (data.deliChatId && data.deliChatId !== shopChatId) await sendTelegram(text, data.deliChatId);
+                await sendTelegram(text, targetChatId);
+                if (data.deliChatId && data.deliChatId !== targetChatId) {
+                    await sendTelegram(text, data.deliChatId);
+                }
             }
 
             fetch(GOOGLE_WEBHOOK_URL, {
