@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -62,3 +63,9 @@ def create_order(order: Order):
     }
     response = supabase.table("orders").insert(data).execute()
     return {"message": "Order placed successfully!", "data": response.data}
+
+# Render မှာ Port ချိတ်ဆက်ပြီး Run နိုင်ရန်
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
