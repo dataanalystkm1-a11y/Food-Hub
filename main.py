@@ -40,7 +40,8 @@ def get_shops():
 
 @app.get("/menus")
 def get_menus():
-    response = supabase.table("menu").select("*").execute()
+    # Supabase table name 'menus' ကို သေချာစစ်ပြီး ချိတ်ထားပါတယ်
+    response = supabase.table("menus").select("*").execute()
     return response.data
 
 @app.get("/delis")
@@ -64,7 +65,6 @@ def create_order(order: Order):
     response = supabase.table("orders").insert(data).execute()
     return {"message": "Order placed successfully!", "data": response.data}
 
-# Render မှာ Port ချိတ်ဆက်ပြီး Run နိုင်ရန်
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
