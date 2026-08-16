@@ -38,9 +38,9 @@ def get_shops():
     response = supabase.table("shops").select("*").execute()
     return response.data
 
-@app.get("/menu")
-def get_menu():
-    # Supabase table name 'menus' ကို သေချာစစ်ပြီး ချိတ်ထားပါတယ်
+@app.get("/menus")
+def get_menus():
+    # Supabase table name 'menu' ကို မှန်ကန်စွာ ချိတ်ဆက်ပေးထားပါသည်
     response = supabase.table("menu").select("*").execute()
     return response.data
 
