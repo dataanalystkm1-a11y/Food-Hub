@@ -37,11 +37,15 @@
         <div id="main-sections" class="space-y-6">
             <div>
                 <h2 class="text-base font-bold text-gray-800 mb-2">🔥 လူကြိုက်များသော မီနူးများ</h2>
-                <div id="featured-menus" class="flex space-x-3 overflow-x-auto no-scrollbar py-1"></div>
+                <div id="featured-menus" class="flex space-x-3 overflow-x-auto no-scrollbar py-1">
+                    <div class="text-gray-400 text-sm">Data ယူနေပါသည်...</div>
+                </div>
             </div>
             <div>
                 <h2 class="text-base font-bold text-gray-800 mb-2">🏪 ဆိုင်များ</h2>
-                <div id="shops-list" class="flex space-x-3 overflow-x-auto no-scrollbar py-1"></div>
+                <div id="shops-list" class="flex space-x-3 overflow-x-auto no-scrollbar py-1">
+                    <div class="text-gray-400 text-sm">Data ယူနေပါသည်...</div>
+                </div>
             </div>
         </div>
         <div>
@@ -64,13 +68,19 @@
     <!-- Cart Modal -->
     <div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-end">
         <div class="bg-white w-full max-h-[90vh] rounded-t-2xl p-4 overflow-y-auto max-w-md mx-auto space-y-4">
-            <h3 class="font-bold text-lg border-b pb-2">🛒 အော်ဒါတင်ရန်</h3>
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-lg text-gray-800">🛒 အော်ဒါတင်ရန်</h3>
+                <button onclick="toggleCartModal()" class="text-gray-500 text-xl font-bold">&times;</button>
+            </div>
             <div id="cart-items-container" class="space-y-2 max-h-40 overflow-y-auto"></div>
-            <input type="text" id="cust-name" placeholder="အမည်" class="w-full text-sm p-2 border rounded-lg">
-            <input type="tel" id="cust-phone" placeholder="ဖုန်းနံပါတ်" class="w-full text-sm p-2 border rounded-lg">
-            <textarea id="cust-address" placeholder="လိပ်စာ" class="w-full text-sm p-2 border rounded-lg"></textarea>
-            <select id="deli-select" class="w-full text-sm p-2 border rounded-lg"></select>
-            <select id="payment-method" class="w-full text-sm p-2 border rounded-lg">
+            <div class="border-t pt-2 text-sm">
+                <div class="flex justify-between"><span>စုစုပေါင်း:</span> <span id="cart-subtotal" class="font-bold">0 ကျပ်</span></div>
+            </div>
+            <input type="text" id="cust-name" placeholder="အမည်" class="w-full text-sm p-2.5 border rounded-lg">
+            <input type="tel" id="cust-phone" placeholder="ဖုန်းနံပါတ်" class="w-full text-sm p-2.5 border rounded-lg">
+            <textarea id="cust-address" placeholder="လိပ်စာ" class="w-full text-sm p-2.5 border rounded-lg"></textarea>
+            <select id="deli-select" class="w-full text-sm p-2.5 border rounded-lg bg-white"></select>
+            <select id="payment-method" class="w-full text-sm p-2.5 border rounded-lg bg-white">
                 <option value="KPay">📱 KBZ Pay (Screenshot တင်မည်)</option>
                 <option value="Cash on Delivery (COD)">💵 Cash on Delivery</option>
             </select>
@@ -86,13 +96,17 @@
             <p id="pay-modal-amount" class="text-xl font-extrabold text-red-600">0 ကျပ်</p>
             <div id="pay-qr-container"></div>
             <div class="text-left text-xs bg-gray-50 p-2 rounded">
+                <p>ဆိုင်အမည်: <span id="pay-shop-name" class="font-bold"></span></p>
                 <p>KPay ဖုန်း: <span id="pay-acc-number" class="font-bold text-blue-600"></span></p>
             </div>
             <div class="text-left">
                 <label class="block text-xs font-bold text-gray-700">Screenshot ပုံ တင်ရန်</label>
                 <input type="file" id="pay-screenshot-file" accept="image/*" class="w-full text-xs p-2 border rounded-lg">
             </div>
-            <button onclick="confirmOrderAfterPayment()" class="w-full bg-green-600 text-white font-bold py-3 rounded-xl">ငွေလွှဲပြီးပါပြီ - အော်ဒါတင်မည်</button>
+            <div class="flex space-x-2">
+                <button onclick="closePaymentModal()" class="w-1/3 bg-gray-200 text-gray-700 font-bold py-2 rounded-xl text-xs">မလုပ်တော့ပါ</button>
+                <button onclick="confirmOrderAfterPayment()" class="w-2/3 bg-green-600 text-white font-bold py-2 rounded-xl text-xs">ငွေလွှဲပြီးပါပြီ - အော်ဒါတင်မည်</button>
+            </div>
         </div>
     </div>
 
@@ -101,19 +115,32 @@
         const GOOGLE_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbyuZmV-CON7myJG9N3obFP3oA7nrSlquBjA6ANJ3IuoNtVQCIE1Q6uA2US82nUq6-Lz/exec";
         const TELEGRAM_BOT_TOKEN = "8453664740:AAGiLC4MPpz7Ce_B2-UuZWHyK2TKA35Mj0Q";
         const DEFAULT_CHAT_ID = "5921089974";
+        const DEFAULT_IMG = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&q=80";
         
         let menuData = [], deliData = [], cart = [], pendingOrderData = null;
 
+        function formatDriveUrl(url) {
+            if (!url || !url.trim()) return DEFAULT_IMG;
+            const match = url.match(/\/d\/([a-zA-Z0-9_-]+/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) return `https://lh3.googleusercontent.com/d/${match[1]}`;
+            return url;
+        }
+
         async function loadSheetData() {
-            const menuRes = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Menu`);
-            menuData = parseCSV(await menuRes.text());
-            const deliRes = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Deli`);
-            deliData = parseCSV(await deliRes.text());
-            renderAppUI();
+            try {
+                const menuRes = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Menu`);
+                menuData = parseCSV(await menuRes.text());
+                const deliRes = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Deli`);
+                deliData = parseCSV(await deliRes.text());
+                renderAppUI();
+            } catch (err) {
+                console.error("Data fetch error:", err);
+            }
         }
 
         function parseCSV(text) {
             const lines = text.split('\n');
+            if (lines.length === 0) return [];
             const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
             return lines.slice(1).filter(l => l.trim()).map(line => {
                 const values = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
@@ -124,63 +151,220 @@
         }
 
         function renderAppUI() {
-            // Render logic here (similar to previous)
-            const grid = document.getElementById('all-menus-grid');
-            menuData.forEach(item => {
-                grid.innerHTML += `<div class="bg-white rounded-xl shadow p-2"><h4 class="text-xs font-bold">${item.menu_name}</h4><button onclick="addToCart('${item.menu_name}', '${item.shop_name}', ${item.price}, '${item.chat_id}')" class="bg-red-500 text-white text-xs w-full py-1 mt-2 rounded">+ ထည့်မည်</button></div>`;
+            // 1. Featured Menus
+            const featuredContainer = document.getElementById('featured-menus');
+            featuredContainer.innerHTML = '';
+            menuData.slice(0, 8).forEach(item => {
+                const img = formatDriveUrl(item.image_url);
+                featuredContainer.innerHTML += `
+                    <div class="min-w-[130px] max-w-[130px] bg-white rounded-xl shadow-sm p-2 border flex-shrink-0 flex flex-col justify-between">
+                        <div>
+                            <img src="${img}" onerror="this.src='${DEFAULT_IMG}'" class="w-full h-20 object-cover rounded-lg mb-1.5 bg-gray-100">
+                            <h4 class="font-bold text-xs text-gray-800 truncate">${item.menu_name}</h4>
+                            <p class="text-[10px] text-gray-500 truncate">${item.shop_name}</p>
+                        </div>
+                        <div class="mt-2 pt-1 border-t">
+                            <span class="text-xs font-bold text-red-500">${parseInt(item.price || 0).toLocaleString()} ကျပ်</span>
+                            <button onclick="addToCart('${item.menu_name}', '${item.shop_name}', ${item.price}, '${item.chat_id}')" class="w-full mt-1 bg-red-500 text-white text-[10px] py-1 rounded font-bold">+ ထည့်မည်</button>
+                        </div>
+                    </div>
+                `;
             });
+
+            // 2. Shops List
+            const shopsContainer = document.getElementById('shops-list');
+            shopsContainer.innerHTML = '';
+            const shops = [...new Set(menuData.map(item => item.shop_name))];
+            shops.forEach(shopName => {
+                const shopItem = menuData.find(i => i.shop_name === shopName);
+                const shopImg = formatDriveUrl(shopItem?.shop_image_url);
+                shopsContainer.innerHTML += `
+                    <div class="min-w-[110px] bg-white rounded-xl shadow-sm p-2.5 border text-center flex-shrink-0 cursor-pointer" onclick="filterByShop('${shopName}')">
+                        <img src="${shopImg}" onerror="this.src='${DEFAULT_IMG}'" class="w-12 h-12 object-cover rounded-full mx-auto mb-1 border">
+                        <h4 class="font-bold text-xs text-gray-800 truncate">${shopName}</h4>
+                        <span class="text-[10px] bg-red-50 text-red-600 px-1 py-0.5 rounded mt-1 inline-block">ကြည့်ရန်</span>
+                    </div>
+                `;
+            });
+
+            // 3. All Menus
+            renderAllMenus(menuData);
+
+            // 4. Deli Select
             const deliSelect = document.getElementById('deli-select');
-            deliData.forEach(d => deliSelect.innerHTML += `<option value="${d.deli_name}" data-price="${d.price}" data-chatid="${d.chat_id}">${d.deli_name}</option>`);
+            deliSelect.innerHTML = '';
+            deliData.forEach(d => {
+                const price = parseInt(d.price) || 0;
+                deliSelect.innerHTML += `<option value="${d.deli_name}" data-price="${price}" data-chatid="${d.chat_id || ''}">${d.deli_name} (${price.toLocaleString()} ကျပ်)</option>`;
+            });
         }
+
+        function renderAllMenus(items) {
+            const grid = document.getElementById('all-menus-grid');
+            grid.innerHTML = '';
+            items.forEach(item => {
+                const img = formatDriveUrl(item.image_url);
+                grid.innerHTML += `
+                    <div class="bg-white rounded-xl shadow-sm p-2.5 border flex flex-col justify-between">
+                        <div>
+                            <img src="${img}" onerror="this.src='${DEFAULT_IMG}'" class="w-full h-24 object-cover rounded-lg mb-2 bg-gray-100">
+                            <h4 class="font-bold text-xs text-gray-800 line-clamp-1">${item.menu_name}</h4>
+                            <p class="text-[10px] text-gray-400 mb-1">${item.shop_name}</p>
+                        </div>
+                        <div class="flex items-center justify-between mt-2 pt-2 border-t">
+                            <span class="text-xs font-bold text-red-500">${parseInt(item.price || 0).toLocaleString()} ကျပ်</span>
+                            <button onclick="addToCart('${item.menu_name}', '${item.shop_name}', ${item.price}, '${item.chat_id}')" class="bg-red-500 text-white text-xs px-2.5 py-1 rounded font-bold">+ ထည့်မည်</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function filterByShop(shopName) {
+            const shopMenus = menuData.filter(i => i.shop_name === shopName);
+            document.getElementById('modal-shop-title').innerText = `🏪 ${shopName}`;
+            const container = document.getElementById('modal-shop-menus');
+            container.innerHTML = '';
+            shopMenus.forEach(item => {
+                const img = formatDriveUrl(item.image_url);
+                container.innerHTML += `
+                    <div class="bg-white rounded-xl shadow-sm p-2 border flex flex-col justify-between">
+                        <img src="${img}" onerror="this.src='${DEFAULT_IMG}'" class="w-full h-20 object-cover rounded mb-1">
+                        <h4 class="font-bold text-xs truncate">${item.menu_name}</h4>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-xs font-bold text-red-500">${parseInt(item.price || 0).toLocaleString()} ကျပ်</span>
+                            <button onclick="addToCart('${item.menu_name}', '${item.shop_name}', ${item.price}, '${item.chat_id}')" class="bg-red-500 text-white text-xs px-2 py-1 rounded">+ ထည့်</button>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('shop-modal').classList.remove('hidden');
+        }
+
+        function closeShopModal() { document.getElementById('shop-modal').classList.add('hidden'); }
 
         function addToCart(name, shop, price, chatId) {
-            cart.push({ name, shop, price: parseInt(price), qty: 1, chatId });
-            document.getElementById('cart-badge').innerText = cart.length;
-            document.getElementById('cart-badge').classList.remove('hidden');
+            const existing = cart.find(i => i.name === name && i.shop === shop);
+            if (existing) { existing.qty++; } else { cart.push({ name, shop, price: parseInt(price), qty: 1, chatId }); }
+            updateCartUI();
+            showToast(`"${name}" ကို ထည့်ပြီးပါပြီ!`);
         }
 
-        function toggleCartModal() { document.getElementById('cart-modal').classList.toggle('hidden'); }
+        function showToast(msg) {
+            const toast = document.getElementById('toast-notification');
+            document.getElementById('toast-message').innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2000);
+        }
+
+        function updateCartUI() {
+            const badge = document.getElementById('cart-badge');
+            const totalQty = cart.reduce((sum, i) => sum + i.qty, 0);
+            if (totalQty > 0) { badge.innerText = totalQty; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+            
+            const container = document.getElementById('cart-items-container');
+            container.innerHTML = '';
+            let subtotal = 0;
+            cart.forEach((item, index) => {
+                subtotal += item.price * item.qty;
+                container.innerHTML += `
+                    <div class="flex justify-between items-center text-xs py-1 border-b">
+                        <div><p class="font-bold">${item.name} (${item.qty}ခု)</p><p class="text-gray-400">${item.shop}</p></div>
+                        <div class="flex items-center space-x-2"><span class="font-bold text-red-500">${(item.price * item.qty).toLocaleString()} ကျပ်</span><button onclick="cart.splice(${index},1);updateCartUI()" class="text-gray-400"><i class="fa-solid fa-trash"></i></button></div>
+                    </div>
+                `;
+            });
+            document.getElementById('cart-subtotal').innerText = `${subtotal.toLocaleString()} ကျပ်`;
+        }
+
+        function toggleCartModal() { document.getElementById('cart-modal').classList.toggle('hidden'); updateCartUI(); }
 
         function handleCheckout() {
             const name = document.getElementById('cust-name').value;
-            if(!name) return alert("အချက်အလက်ဖြည့်ပါ။");
-            pendingOrderData = { name, cartItems: [...cart], subtotal: cart.reduce((s,i) => s + i.price, 0) };
-            if (document.getElementById('payment-method').value === "KPay") {
-                document.getElementById('pay-modal-amount').innerText = pendingOrderData.subtotal + " ကျပ်";
+            const phone = document.getElementById('cust-phone').value;
+            const address = document.getElementById('cust-address').value;
+            const payMethod = document.getElementById('payment-method').value;
+            const deliSelect = document.getElementById('deli-select');
+            const deliName = deliSelect.value;
+            const deliOpt = deliSelect.options[deliSelect.selectedIndex];
+            const deliFee = parseInt(deliOpt.getAttribute('data-price') || 0);
+            const deliChatId = deliOpt.getAttribute('data-chatid') || '';
+
+            if (!name || !phone || !address) { alert("အမည်၊ ဖုန်းနှင့် လိပ်စာ ဖြည့်ပါ။"); return; }
+            if (cart.length === 0) { alert("ခြင်းထဲတွင် ပစ္စည်းမရှိပါ။"); return; }
+
+            const subtotal = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+            const grandTotal = subtotal + deliFee;
+            const shopNames = [...new Set(cart.map(i => i.shop))].join(', ');
+
+            pendingOrderData = { name, phone, address, payMethod, deliName, deliFee, deliChatId, subtotal, grandTotal, shopNames, cartItems: [...cart] };
+
+            if (payMethod.includes("KPay")) {
+                const firstShop = cart[0].shop;
+                const shopInfo = menuData.find(i => i.shop_name === firstShop) || {};
+                document.getElementById('pay-modal-amount').innerText = `${grandTotal.toLocaleString()} ကျပ်`;
+                document.getElementById('pay-shop-name').innerText = firstShop;
+                document.getElementById('pay-acc-number').innerText = shopInfo.kpay_number || "09-XXXXXXXXX";
+                
+                const qrContainer = document.getElementById('pay-qr-container');
+                if (shopInfo.kpay_qr_url) {
+                    qrContainer.innerHTML = `<img src="${formatDriveUrl(shopInfo.kpay_qr_url)}" class="w-36 h-36 object-contain mx-auto rounded border p-1 my-2">`;
+                } else { qrContainer.innerHTML = ''; }
+
+                document.getElementById('pay-screenshot-file').value = "";
                 document.getElementById('payment-modal').classList.remove('hidden');
-            } else { executeSubmitOrder(); }
+            } else { executeSubmitOrder(false); }
         }
+
+        function closePaymentModal() { document.getElementById('payment-modal').classList.add('hidden'); }
 
         async function confirmOrderAfterPayment() {
             const fileInput = document.getElementById('pay-screenshot-file');
-            if (fileInput.files.length === 0) return alert("ကျေးဇူးပြု၍ Screenshot ပုံ တင်ပေးပါ။");
+            if (fileInput.files.length === 0) { alert("ကျေးဇူးပြု၍ Screenshot ပုံ တင်ပေးပါ။"); return; }
+            closePaymentModal();
             const base64 = await toBase64(fileInput.files[0]);
-            document.getElementById('payment-modal').classList.add('hidden');
             executeSubmitOrder(true, base64);
         }
 
-        const toBase64 = file => new Promise((resolve) => {
+        const toBase64 = file => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
         });
 
         async function executeSubmitOrder(isKPay = false, base64 = null) {
             const data = pendingOrderData;
-            let text = `📦 အော်ဒါအသစ်\n👤 ${data.name}\n💰 ${data.subtotal} ကျပ်`;
+            let statusTitle = isKPay ? "⏳ **ငွေလွှဲစစ်ဆေးရန် အော်ဒါ (Pending KPay)**" : "📦 **အော်ဒါအသစ် (COD)**";
+            let text = `${statusTitle}\n\n👤 **အမည်:** ${data.name}\n📞 **ဖုန်း:** ${data.phone}\n📍 **လိပ်စာ:** ${data.address}\n🛵 **Deli:** ${data.deliName}\n\n🛒 **မှာယူသည်များ:**\n`;
+            data.cartItems.forEach(i => text += `- ${i.name} x ${i.qty} = ${(i.price * i.qty).toLocaleString()} ကျပ်\n`);
+            text += `\n💰 **စုစုပေါင်း:** ${data.grandTotal.toLocaleString()} ကျပ်`;
+
             const shopChatId = data.cartItems[0].chatId || DEFAULT_CHAT_ID;
-            
+
             if (isKPay && base64) {
                 await sendTelegramPhoto(base64, text, shopChatId);
+                if (data.deliChatId && data.deliChatId !== shopChatId) await sendTelegramPhoto(base64, text, data.deliChatId);
             } else {
                 await sendTelegram(text, shopChatId);
+                if (data.deliChatId && data.deliChatId !== shopChatId) await sendTelegram(text, data.deliChatId);
             }
-            alert("အော်ဒါတင်ခြင်း အောင်မြင်ပါသည်။");
-            cart = []; toggleCartModal();
+
+            // Google Sheet Webhook
+            fetch(GOOGLE_WEBHOOK_URL, {
+                method: 'POST', mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customer_name: data.name, phone: data.phone, address: data.address, shop_name: data.shopNames, deli_option: data.deliName, total_price: data.grandTotal, payment_method: data.payMethod })
+            });
+
+            alert("🎉 အော်ဒါတင်ခြင်း အောင်မြင်ပါသည်။");
+            cart = []; pendingOrderData = null;
+            toggleCartModal();
+            updateCartUI();
         }
 
         async function sendTelegram(text, chatId) {
-            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({chat_id: chatId, text}) });
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' }) });
         }
 
         async function sendTelegramPhoto(base64, caption, chatId) {
@@ -190,6 +374,7 @@
             formData.append('chat_id', chatId);
             formData.append('photo', new Blob([u8arr], {type: mime}));
             formData.append('caption', caption);
+            formData.append('parse_mode', 'Markdown');
             await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
         }
 
