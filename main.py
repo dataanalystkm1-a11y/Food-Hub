@@ -38,10 +38,10 @@ def get_shops():
     response = supabase.table("shops").select("*").execute()
     return response.data
 
-@app.get("/menus")
-def get_menus():
+@app.get("/menu")
+def get_menu():
     # Supabase table name 'menus' ကို သေချာစစ်ပြီး ချိတ်ထားပါတယ်
-    response = supabase.table("menus").select("*").execute()
+    response = supabase.table("menu").select("*").execute()
     return response.data
 
 @app.get("/delis")
