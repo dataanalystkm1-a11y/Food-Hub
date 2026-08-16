@@ -10,16 +10,12 @@
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes cartBounce { 0% { transform: scale(1); } 50% { transform: scale(1.25); } 100% { transform: scale(1); } }
-        .animate-bounce-cart { animation: cartBounce 0.3s ease-in-out; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-toast { animation: fadeInUp 0.3s ease-out forwards; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans pb-24">
 
     <!-- Header -->
-    <div class="bg-red-500 text-white p-4 sticky top-0 z-40 shadow-md flex justify-between items-center">
+    <div class="bg-red-500 text-white p-4 sticky top-0 z-45 shadow-md flex justify-between items-center">
         <h1 class="text-lg font-bold">🍔 Delivery App</h1>
         <button id="cart-btn" onclick="toggleCartModal()" class="relative bg-white text-red-500 px-3 py-1.5 rounded-full font-bold text-sm shadow">
             <i class="fa-solid fa-cart-shopping"></i> စျေးဝယ်ခြင်း
@@ -50,7 +46,9 @@
         </div>
         <div>
             <h2 class="text-base font-bold text-gray-800 mb-2">🍽️ မီနူးအားလုံး</h2>
-            <div id="all-menus-grid" class="grid grid-cols-2 gap-3"></div>
+            <div id="all-menus-grid" class="grid grid-cols-2 gap-3">
+                <div class="col-span-2 text-gray-400 text-sm text-center py-4">Data ယူနေပါသည်...</div>
+            </div>
         </div>
     </div>
 
@@ -97,6 +95,7 @@
             <div id="pay-qr-container"></div>
             <div class="text-left text-xs bg-gray-50 p-2 rounded">
                 <p>ဆိုင်အမည်: <span id="pay-shop-name" class="font-bold"></span></p>
+                <p>KPay အမည်: <span id="pay-acc-name" class="font-bold"></span></p>
                 <p>KPay ဖုန်း: <span id="pay-acc-number" class="font-bold text-blue-600"></span></p>
             </div>
             <div class="text-left">
@@ -121,20 +120,25 @@
 
         function formatDriveUrl(url) {
             if (!url || !url.trim()) return DEFAULT_IMG;
-            const match = url.match(/\/d\/([a-zA-Z0-9_-]+/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
             if (match && match[1]) return `https://lh3.googleusercontent.com/d/${match[1]}`;
             return url;
         }
 
         async function loadSheetData() {
             try {
-                const menuRes = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Menu`);
-                menuData = parseCSV(await menuRes.text());
+                const menuRes = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=shop_menu`);
+                const menuText = await menuRes.text();
+                menuData = parseCSV(menuText);
+
                 const deliRes = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Deli`);
-                deliData = parseCSV(await deliRes.text());
+                const deliText = await deliRes.text();
+                deliData = parseCSV(deliText);
+
                 renderAppUI();
             } catch (err) {
                 console.error("Data fetch error:", err);
+                document.getElementById('featured-menus').innerHTML = '<div class="text-red-500 text-xs">Data ဆွဲ၍မရပါ။ Sheet ကို Publish လုပ်ထားခြင်း ရှိမရှိ စစ်ဆေးပါ။</div>';
             }
         }
 
@@ -151,10 +155,12 @@
         }
 
         function renderAppUI() {
-            // 1. Featured Menus
             const featuredContainer = document.getElementById('featured-menus');
             featuredContainer.innerHTML = '';
-            menuData.slice(0, 8).forEach(item => {
+            
+            const availableMenus = menuData.filter(item => item.status && item.status.toLowerCase() === 'available');
+
+            availableMenus.slice(0, 8).forEach(item => {
                 const img = formatDriveUrl(item.image_url);
                 featuredContainer.innerHTML += `
                     <div class="min-w-[130px] max-w-[130px] bg-white rounded-xl shadow-sm p-2 border flex-shrink-0 flex flex-col justify-between">
@@ -171,10 +177,9 @@
                 `;
             });
 
-            // 2. Shops List
             const shopsContainer = document.getElementById('shops-list');
             shopsContainer.innerHTML = '';
-            const shops = [...new Set(menuData.map(item => item.shop_name))];
+            const shops = [...new Set(menuData.map(item => item.shop_name).filter(Boolean))];
             shops.forEach(shopName => {
                 const shopItem = menuData.find(i => i.shop_name === shopName);
                 const shopImg = formatDriveUrl(shopItem?.shop_image_url);
@@ -187,13 +192,12 @@
                 `;
             });
 
-            // 3. All Menus
-            renderAllMenus(menuData);
+            renderAllMenus(availableMenus);
 
-            // 4. Deli Select
             const deliSelect = document.getElementById('deli-select');
             deliSelect.innerHTML = '';
-            deliData.forEach(d => {
+            const availableDeli = deliData.filter(d => !d.status || d.status.toLowerCase() === 'available');
+            availableDeli.forEach(d => {
                 const price = parseInt(d.price) || 0;
                 deliSelect.innerHTML += `<option value="${d.deli_name}" data-price="${price}" data-chatid="${d.chat_id || ''}">${d.deli_name} (${price.toLocaleString()} ကျပ်)</option>`;
             });
@@ -221,7 +225,7 @@
         }
 
         function filterByShop(shopName) {
-            const shopMenus = menuData.filter(i => i.shop_name === shopName);
+            const shopMenus = menuData.filter(i => i.shop_name === shopName && (!i.status || i.status.toLowerCase() === 'available'));
             document.getElementById('modal-shop-title').innerText = `🏪 ${shopName}`;
             const container = document.getElementById('modal-shop-menus');
             container.innerHTML = '';
@@ -304,6 +308,7 @@
                 const shopInfo = menuData.find(i => i.shop_name === firstShop) || {};
                 document.getElementById('pay-modal-amount').innerText = `${grandTotal.toLocaleString()} ကျပ်`;
                 document.getElementById('pay-shop-name').innerText = firstShop;
+                document.getElementById('pay-acc-name').innerText = shopInfo.kpay_name || "";
                 document.getElementById('pay-acc-number').innerText = shopInfo.kpay_number || "09-XXXXXXXXX";
                 
                 const qrContainer = document.getElementById('pay-qr-container');
@@ -350,7 +355,6 @@
                 if (data.deliChatId && data.deliChatId !== shopChatId) await sendTelegram(text, data.deliChatId);
             }
 
-            // Google Sheet Webhook
             fetch(GOOGLE_WEBHOOK_URL, {
                 method: 'POST', mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
