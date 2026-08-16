@@ -1,107 +1,83 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="my">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Food Hub - Delivery App</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Delivery App</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 p-6">
-    <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-2xl font-bold mb-4 text-center text-pink-600">မုန့်မှာယူရန်</h2>
-        
-        <!-- Order Form -->
-        <form id="orderForm" class="space-y-4">
-            <div>
-                <label class="block text-gray-700 font-medium">ဆိုင်အမည် (Shop ID)</label>
-                <input type="number" id="shop_id" class="w-full border p-2 rounded" required>
+<body class="bg-gray-100 pb-12">
+    <!-- Header -->
+    <header class="bg-rose-500 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold">🍔 Delivery App</h1>
+        <button class="bg-white text-rose-500 px-4 py-2 rounded-full font-semibold shadow">🛒 ဈေးဝယ်ခြင်း</button>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-6">
+        <!-- Popular Foods -->
+        <section>
+            <h2 class="text-lg font-bold mb-3">🔥 လူကြိုက်များသော မုန့်များ</h2>
+            <div class="grid grid-cols-3 gap-3">
+                <!-- Item 1 -->
+                <div class="bg-white p-2 rounded-xl shadow">
+                    <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c" class="w-full h-24 object-cover rounded-lg">
+                    <h3 class="font-bold text-sm mt-1">ထမင်းသုပ်</h3>
+                    <p class="text-xs text-gray-500">မြန်မာမုန့်</p>
+                    <p class="text-rose-500 font-bold text-sm mt-1">3,500 ကျပ်</p>
+                    <button class="w-full bg-rose-500 text-white text-xs py-1 rounded mt-2">+ ထည့်မည်</button>
+                </div>
+                <!-- Item 2 -->
+                <div class="bg-white p-2 rounded-xl shadow">
+                    <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd" class="w-full h-24 object-cover rounded-lg">
+                    <h3 class="font-bold text-sm mt-1">ခေါက်ဆွဲသုပ်</h3>
+                    <p class="text-xs text-gray-500">မြန်မာမုန့်</p>
+                    <p class="text-rose-500 font-bold text-sm mt-1">2,000 ကျပ်</p>
+                    <button class="w-full bg-rose-500 text-white text-xs py-1 rounded mt-2">+ ထည့်မည်</button>
+                </div>
+                <!-- Item 3 -->
+                <div class="bg-white p-2 rounded-xl shadow">
+                    <img src="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38" class="w-full h-24 object-cover rounded-lg">
+                    <h3 class="font-bold text-sm mt-1">အကြော်စုံ</h3>
+                    <p class="text-xs text-gray-500">အဆာပြေ</p>
+                    <p class="text-rose-500 font-bold text-sm mt-1">1,500 ကျပ်</p>
+                    <button class="w-full bg-rose-500 text-white text-xs py-1 rounded mt-2">+ ထည့်မည်</button>
+                </div>
             </div>
+        </section>
 
-            <div>
-                <label class="block text-gray-700 font-medium">ဆိုင်အမည် (Shop Name)</label>
-                <input type="text" id="shop_name" class="w-full border p-2 rounded" required>
+        <!-- Shops -->
+        <section>
+            <h2 class="text-lg font-bold mb-3">🏪 ဆိုင်များ</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white p-3 rounded-xl shadow text-center">
+                    <img src="https://images.unsplash.com/photo-1555396273-367ea4eb4db5" class="w-16 h-16 object-cover rounded-full mx-auto">
+                    <h3 class="font-bold text-sm mt-2">မိန်မိန်</h3>
+                    <button class="text-rose-500 text-xs border border-rose-500 px-3 py-1 rounded-full mt-2">ကြည့်ရန်</button>
+                </div>
+                <div class="bg-white p-3 rounded-xl shadow text-center">
+                    <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4" class="w-16 h-16 object-cover rounded-full mx-auto">
+                    <h3 class="font-bold text-sm mt-2">ရွှေနဒီ Restaurent</h3>
+                    <button class="text-rose-500 text-xs border border-rose-500 px-3 py-1 rounded-full mt-2">ကြည့်ရန်</button>
+                </div>
             </div>
+        </section>
 
-            <div>
-                <label class="block text-gray-700 font-medium">ဖောက်သည်အမည် (Customer Name)</label>
-                <input type="text" id="customer_name" class="w-full border p-2 rounded" required>
+        <!-- All Foods -->
+        <section>
+            <h2 class="text-lg font-bold mb-3">🍽️ မုန့်အားလုံး</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-white p-2 rounded-xl shadow">
+                    <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c" class="w-full h-28 object-cover rounded-lg">
+                    <h3 class="font-bold text-sm mt-1">လက်ဖက်ထမင်း</h3>
+                    <p class="text-xs text-gray-500">မြန်မာစာ</p>
+                </div>
+                <div class="bg-white p-2 rounded-xl shadow">
+                    <img src="https://images.unsplash.com/photo-1512621776951-a57141f2eefd" class="w-full h-28 object-cover rounded-lg">
+                    <h3 class="font-bold text-sm mt-1">ထမင်းသုပ်</h3>
+                    <p class="text-xs text-gray-500">မြန်မာစာ</p>
+                </div>
             </div>
-
-            <div>
-                <label class="block text-gray-700 font-medium">ဖုန်းနံပါတ် (Phone)</label>
-                <input type="text" id="phone" class="w-full border p-2 rounded" required>
-            </div>
-
-            <div>
-                <label class="block text-gray-700 font-medium">လိပ်စာ (Address)</label>
-                <textarea id="address" class="w-full border p-2 rounded" required></textarea>
-            </div>
-
-            <div>
-                <label class="block text-gray-700 font-medium">မုန့် ID (Menu ID)</label>
-                <input type="number" id="menu_id" class="w-full border p-2 rounded" required>
-            </div>
-
-            <div>
-                <label class="block text-gray-700 font-medium">မုန့်နာမည် (Menu Name)</label>
-                <input type="text" id="menu_name" class="w-full border p-2 rounded" required>
-            </div>
-
-            <div>
-                <label class="block text-gray-700 font-medium">စုစုပေါင်းကျငွေ (Total Price)</label>
-                <input type="number" id="total_price" class="w-full border p-2 rounded" required>
-            </div>
-
-            <div>
-                <label class="block text-gray-700 font-medium">Deli ID</label>
-                <input type="number" id="deli_id" class="w-full border p-2 rounded" required>
-            </div>
-
-            <button type="submit" class="w-full bg-pink-600 text-white p-2 rounded font-bold hover:bg-pink-700">
-                Order တင်မည်
-            </button>
-        </form>
-    </div>
-
-    <!-- JavaScript for sending data to FastAPI -->
-    <script>
-        document.getElementById("orderForm").addEventListener("submit", async function(e) {
-            e.preventDefault();
-
-            const orderData = {
-                shop_id: parseInt(document.getElementById("shop_id").value),
-                shop_name: document.getElementById("shop_name").value,
-                customer_name: document.getElementById("customer_name").value,
-                phone: document.getElementById("phone").value,
-                address: document.getElementById("address").value,
-                menu_id: parseInt(document.getElementById("menu_id").value),
-                menu_name: document.getElementById("menu_name").value,
-                total_price: parseInt(document.getElementById("total_price").value),
-                deli_id: parseInt(document.getElementById("deli_id").value)
-            };
-
-            try {
-                const response = await fetch("https://food-hub-mysa.onrender.com/orders", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(orderData)
-                });
-
-                const result = await response.json();
-                if (response.ok) {
-                    alert("Order တင်ခြင်း အောင်မြင်ပါသည်။");
-                    document.getElementById("orderForm").reset();
-                } else {
-                    alert("Error: " + JSON.stringify(result));
-                }
-            } catch (error) {
-                console.error("Error:", error);
-                alert("Server သို့ ချိတ်ဆက်၍ မရပါခင်ဗျာ။");
-            }
-        });
-    </script>
+        </section>
+    </main>
 </body>
 </html>
