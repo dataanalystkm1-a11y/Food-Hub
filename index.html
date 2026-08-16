@@ -127,7 +127,8 @@
 
         async function loadSheetData() {
             try {
-                const menuRes = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=shop_menu`);
+                // Tab နာမည် 'Menu' နှင့် ချိန်ညှိထားပါသည်
+                const menuRes = await fetch(`https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Menu`);
                 const menuText = await menuRes.text();
                 menuData = parseCSV(menuText);
 
