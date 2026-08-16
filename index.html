@@ -5,12 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nway's Delivery App</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* ပုံများကို Drag ဆွဲ၍မရအောင် နှင့် Text များကို Select လုပ်မရအောင် ကာကွယ်ခြင်း */
+        img {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-user-drag: none; 
+        }
+        .menu-card {
+            cursor: grab;
+        }
+        .menu-card:active {
+            cursor: grabbing;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 pb-12">
     <!-- Header -->
     <header class="bg-pink-600 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
         <h1 class="text-xl font-bold">🍔 Nway's Delivery App</h1>
-        <button id="cartBtn" class="bg-white text-pink-600 px-4 py-2 rounded-full font-semibold shadow text-sm flex items-center gap-1" ondragover="event.preventDefault()" ondrop="dropToCart(event)">
+        <button id="cartBtn" class="bg-white text-pink-600 px-4 py-2 rounded-full font-semibold shadow text-sm flex items-center gap-1">
             🛒 ဈေးဝယ်ခြင်း (<span id="cartCount">0</span>)
         </button>
     </header>
@@ -128,7 +143,6 @@
         }
 
         function addToCart(item) {
-            // ဆိုင်နာမည် အသေအချာပါအောင် ထည့်ပေးခြင်း
             item.shop_name = getShopName(item.shop_id);
             cart.push(item);
             updateCartUI();
@@ -139,12 +153,19 @@
             event.dataTransfer.setData('text/plain', index);
         }
 
-        function dropToCart(event) {
-            event.preventDefault();
-            const index = event.dataTransfer.getData('text/plain');
-            if (index !== "" && allMenus[index]) {
-                addToCart(allMenus[index]);
-            }
+        // ကတ်ပြားများကို Cart ခလုတ်ဆီသို့ ဆွဲထည့်ခြင်း (Drag and Drop) အလုပ်လုပ်စေရန်
+        const cartBtn = document.getElementById('cartBtn');
+        if (cartBtn) {
+            cartBtn.addEventListener('dragover', (event) => {
+                event.preventDefault();
+            });
+            cartBtn.addEventListener('drop', (event) => {
+                event.preventDefault();
+                const index = event.dataTransfer.getData('text/plain');
+                if (index !== "" && allMenus[index]) {
+                    addToCart(allMenus[index]);
+                }
+            });
         }
 
         function getDriveDirectUrl(url) {
@@ -155,7 +176,7 @@
 
         async function loadDashboardData() {
             try {
-                // 1. Shops Fetch First (ဆိုင်များကို ဦးစွာဆွဲထုတ်ပါ)
+                // 1. Shops Fetch First
                 const shopRes = await fetch(`${API_BASE_URL}/shops`);
                 allShops = await shopRes.json();
                 
@@ -185,7 +206,7 @@
                         const currentShopName = getShopName(item.shop_id);
                         return `
                             <div draggable="true" ondragstart="dragStart(event, ${index})"
-                                 class="bg-white p-3 rounded-xl shadow flex flex-col justify-between cursor-grab active:cursor-grabbing">
+                                 class="menu-card bg-white p-3 rounded-xl shadow flex flex-col justify-between">
                                 <div>
                                     <img src="${imageUrl}" alt="${item.menu_name || 'Menu'}" class="w-full h-28 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='https://via.placeholder.com/150'">
                                     <h3 class="font-bold text-sm text-gray-800">${item.menu_name || 'မီနူးအမည်'}</h3>
@@ -289,7 +310,6 @@
                 subTotalAmount.innerText = subTotal.toLocaleString() + " ကျပ်";
                 updateTotalWithDeli();
 
-                // ဆိုင်အလိုက် KPay QR နဲ့ No ကို ရှာပြခြင်း (shop_id ကို အသုံးပြု၍ ရှာမည်)
                 const firstItem = cart[0];
                 const matchedShop = allShops.find(s => String(s.id || s.shop_id) === String(firstItem.shop_id) || s.shop_name === firstItem.shop_name);
 
@@ -352,6 +372,9 @@
             updateCartUI();
             document.getElementById('cartModal').classList.add('hidden');
         }
+
+        // Right-click ကာကွယ်ရန် (Context Menu ပိတ်ရန်)
+        document.addEventListener('contextmenu', event => event.preventDefault());
 
         loadDashboardData();
         updateCartUI();
