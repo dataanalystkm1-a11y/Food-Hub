@@ -3,80 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nway's Foodie</title>
+    <title>Foodie App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Horizontal Scroll Styling */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
+        /* မူလပုံစံအတိုင်း - Vibrate နှင့် Drag effect ထည့်ထားသည် */
         .menu-card { 
             cursor: grab; 
-            transition: all 0.2s; 
-            touch-action: manipulation;
+            transition: all 0.2s ease;
         }
-        /* Vibration / Active Effect */
         .menu-card:active { 
             transform: scale(0.95); 
-            background-color: #fce7f3; /* Pink-100 */
+            background-color: #fce7f3; 
         }
+        .scroll-container { display: flex; overflow-x: auto; gap: 1rem; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
-<body class="bg-gray-100 pb-12">
+<body class="bg-gray-100 p-4">
     <!-- Header -->
-    <header class="bg-pink-600 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
-        <h1 class="text-xl font-bold">🍔 Nway's Foodie</h1>
-        <button id="cartBtn" class="bg-white text-pink-600 px-4 py-2 rounded-full font-semibold text-sm">🛒 (<span id="cartCount">0</span>)</button>
+    <header class="mb-4">
+        <h1 class="text-xl font-bold">🍔 မီနူးများ</h1>
     </header>
 
-    <main class="max-w-md mx-auto p-4 space-y-6">
-        <!-- Menus Section (Horizontal Scroll) -->
-        <section>
-            <h2 class="text-lg font-bold mb-3 text-gray-800">🔥 မီနူးများ</h2>
-            <div id="menuContainer" class="flex overflow-x-auto gap-4 pb-4 no-scrollbar">
-                <p class="text-gray-500">Loading...</p>
-            </div>
-        </section>
+    <!-- မီနူးများ (ဘေးတိုက်ဆွဲနိုင်) -->
+    <section class="scroll-container no-scrollbar mb-6" id="menuContainer"></section>
 
-        <!-- Shops Section (Grid 2x2) -->
-        <section>
-            <h2 class="text-lg font-bold mb-3 text-gray-800">🏪 ဆိုင်များ</h2>
-            <div id="shopContainer" class="grid grid-cols-2 gap-4">
-                <p class="text-gray-500">Loading...</p>
-            </div>
-        </section>
+    <!-- ဆိုင်များ -->
+    <h1 class="text-xl font-bold mb-4">🏪 ဆိုင်များ</h1>
+    <div id="shopContainer" class="grid grid-cols-2 gap-4"></div>
 
-        <!-- Deli Services Hidden -->
-        <section class="hidden">
-            <div id="deliContainer"></div>
-        </section>
-    </main>
+    <!-- DELI များ (မူလအတိုင်း) -->
+    <h1 class="text-xl font-bold mt-8 mb-4">🛵 Delivery</h1>
+    <div id="deliContainer" class="space-y-3"></div>
 
-    <!-- Shop Detail Modal (Grid 2x2 for Items) -->
-    <div id="shopModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl max-h-[80vh] overflow-y-auto">
-            <h2 id="shopModalTitle" class="text-lg font-bold mb-4 text-gray-800"></h2>
-            <div id="shopMenuList" class="grid grid-cols-2 gap-4"></div>
-            <button onclick="document.getElementById('shopModal').classList.add('hidden')" class="w-full mt-6 bg-gray-200 py-2 rounded-xl text-sm">ပိတ်ရန်</button>
+    <!-- Shop Modal (ဆိုင်ထဲဝင်လျှင် ၄ ပုံ - ၂x၂) -->
+    <div id="shopModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-4 max-h-[80vh] overflow-y-auto">
+            <h2 id="modalTitle" class="font-bold mb-4 text-lg"></h2>
+            <div id="modalMenuGrid" class="grid grid-cols-2 gap-3"></div>
+            <button onclick="document.getElementById('shopModal').classList.add('hidden')" class="w-full mt-4 bg-gray-200 py-2 rounded-lg">ပိတ်ရန်</button>
         </div>
     </div>
 
     <script>
         const API_BASE_URL = 'https://mgyfoodie.onrender.com';
-        let allMenus = [];
-        let cart = [];
 
-        // Vibration Function
-        function triggerVibration() {
-            if (navigator.vibrate) navigator.vibrate(50);
-        }
+        function vibrate() { if(navigator.vibrate) navigator.vibrate(50); }
 
         async function loadData() {
-            // Fetch Shops & Menus... (ကျန်တဲ့ logic များ မပြောင်းလဲပါ)
-            // ဆိုင်တစ်ခုထဲဝင်ရင် grid-cols-2 ဖြစ်အောင် ဒီနေရာမှာ ၄ ပုံ ပေါ်အောင် CSS သေချာ ထည့်ထားပါတယ်
+            const [menus, shops, delis] = await Promise.all([
+                fetch(`${API_BASE_URL}/menus`).then(r => r.json()),
+                fetch(`${API_BASE_URL}/shops`).then(r => r.json()),
+                fetch(`${API_BASE_URL}/delis`).then(r => r.json())
+            ]);
+
+            // မီနူးများ
+            document.getElementById('menuContainer').innerHTML = menus.map(m => `
+                <div class="menu-card bg-white p-2 rounded-xl shadow min-w-[120px]" onclick="vibrate()">
+                    <img src="${m.image_url}" class="w-full h-24 object-cover rounded-lg">
+                    <p class="text-xs mt-1 font-bold">${m.menu_name}</p>
+                </div>
+            `).join('');
+
+            // ဆိုင်များ
+            document.getElementById('shopContainer').innerHTML = shops.map(s => `
+                <div class="bg-white p-3 rounded-xl shadow cursor-pointer" onclick="openShop(${s.id}, '${s.shop_name}', ${JSON.stringify(menus).replace(/"/g, "'")})">
+                    <img src="${s.shop_image_url}" class="w-full h-24 object-cover rounded-lg">
+                    <p class="font-bold mt-1">${s.shop_name}</p>
+                </div>
+            `).join('');
+
+            // DELI များ
+            document.getElementById('deliContainer').innerHTML = delis.map(d => `
+                <div class="bg-white p-4 rounded-xl shadow flex items-center justify-between">
+                    <span>${d.deli_name}</span>
+                    <span class="text-pink-600 font-bold">${d.fee} ကျပ်</span>
+                </div>
+            `).join('');
         }
 
-        // ကျန်ရှိသော Function များကို နွေးရဲ့ မူလ code အတိုင်း ပြန်ထည့်ပေးထားပါ
+        function openShop(id, name, allMenus) {
+            document.getElementById('modalTitle').innerText = name;
+            const items = allMenus.filter(m => m.shop_id == id);
+            document.getElementById('modalMenuGrid').innerHTML = items.map(m => `
+                <div class="bg-gray-50 p-2 rounded-lg text-center" onclick="vibrate()">
+                    <img src="${m.image_url}" class="w-full h-20 object-cover rounded">
+                    <p class="text-[10px] mt-1 font-bold">${m.menu_name}</p>
+                </div>
+            `).join('');
+            document.getElementById('shopModal').classList.remove('hidden');
+        }
+
+        loadData();
     </script>
 </body>
 </html>
