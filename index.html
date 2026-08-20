@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nway's Delivery App</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ပုံများကို Drag ဆွဲ၍မရအောင် နှင့် Text များကို Select လုပ်မရအောင် ကာကွယ်ခြင်း */
         img {
             -webkit-touch-callout: none;
             -webkit-user-select: none;
@@ -35,7 +36,7 @@
         <section>
             <h2 class="text-lg font-bold mb-3 text-gray-800">🔥 လူကြိုက်များသော မီနူးများ (ဆွဲယူပါ သို့မဟုတ် နှိပ်ပါ)</h2>
             <div id="menuContainer" class="grid grid-cols-2 gap-3">
-                <p class="text-gray-500 text-sm">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
+                <p class="text-gray-500 text-sm col-span-2">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </section>
 
@@ -43,7 +44,7 @@
         <section>
             <h2 class="text-lg font-bold mb-3 text-gray-800">🏪 ဆိုင်များ</h2>
             <div id="shopContainer" class="grid grid-cols-2 gap-4">
-                <p class="text-gray-500 text-sm">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
+                <p class="text-gray-500 text-sm col-span-2">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </section>
 
@@ -61,7 +62,6 @@
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 class="text-lg font-bold mb-3 text-gray-800">🛒 ဈေးဝယ်ခြင်းနှင့် ငွေပေးချေရန်</h2>
             
-            <!-- Customer Info Form -->
             <div class="space-y-3 mb-4 bg-gray-50 p-3 rounded-xl">
                 <h3 class="text-xs font-bold text-gray-700 uppercase">ဝယ်ယူသူ အချက်အလက်</h3>
                 <input type="text" id="custName" placeholder="အမည်" class="w-full text-sm border p-2 rounded-lg">
@@ -69,7 +69,6 @@
                 <textarea id="custAddress" placeholder="လိပ်စာအပြည့်အစုံ" class="w-full text-sm border p-2 rounded-lg" rows="2"></textarea>
             </div>
 
-            <!-- Cart Items List -->
             <div class="mb-4">
                 <h3 class="text-xs font-bold text-gray-700 uppercase mb-2">ရွေးချယ်ထားသော မုန့်များ</h3>
                 <div id="cartList" class="space-y-2 max-h-40 overflow-y-auto border-b pb-2"></div>
@@ -90,7 +89,6 @@
                 </div>
             </div>
 
-            <!-- Select Deli -->
             <div class="mb-4">
                 <h3 class="text-xs font-bold text-gray-700 uppercase mb-2">Deli ရွေးချယ်ရန်</h3>
                 <select id="deliSelect" onchange="updateTotalWithDeli()" class="w-full text-sm border p-2 rounded-lg bg-white">
@@ -98,18 +96,13 @@
                 </select>
             </div>
 
-            <!-- Payment Section (KPay & QR) -->
-            <div id="paymentSection" class="mb-4 p-3 bg-pink-50 rounded-xl hidden text-center">
-                <h3 class="text-xs font-bold text-pink-700 uppercase mb-2">ငွေပေးချေရန် (KPay)</h3>
-                <p id="shopKpayNo" class="text-xs font-semibold text-gray-800 mb-2"></p>
-                <div id="shopQrContainer" class="flex justify-center mb-2"></div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">ငွေလွှဲထားသော Screenshot တင်ရန်</label>
-                <input type="file" id="paymentScreenshot" accept="image/*" class="w-full text-xs border p-1 rounded bg-white">
+            <div class="mb-4 p-3 bg-pink-50 rounded-xl text-center">
+                <p class="text-xs font-bold text-pink-700 uppercase">💵 Cash on Delivery (ပစ္စည်းရောက်မှ ငွေချေစနစ်)</p>
             </div>
 
             <div class="flex gap-2">
                 <button onclick="document.getElementById('cartModal').classList.add('hidden')" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl text-sm font-semibold">ပိတ်ရန်</button>
-                <button onclick="checkoutOrder()" class="flex-1 bg-pink-600 text-white py-2 rounded-xl text-sm font-semibold">Order တင်မည်</button>
+                <button id="submitOrderBtn" onclick="checkoutOrder()" class="flex-1 bg-pink-600 text-white py-2 rounded-xl text-sm font-semibold">Order တင်မည် (COD)</button>
             </div>
         </div>
     </div>
@@ -126,7 +119,13 @@
 
     <!-- JavaScript -->
     <script>
-        const API_BASE_URL = 'https://mgyfoodie.onrender.com';
+        const SUPABASE_URL = 'https://xdxyjcuqtajwdiunmahy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkeHlqY3VxdGFqd2RpdW5tYWh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4NjY5NDcsImV4cCI6MjEwMjQ0Mjk0N30.Jh1Lh_--kiCxAbF1iq86FMnVpm_G7inTzxgzH7bwrLI';
+
+        // CDN မှ createClient ကို မှန်ကန်စွာ ခေါ်ယူခြင်း
+        const createClient = window.supabase ? window.supabase.createClient : (window.supabaseJS ? window.supabaseJS.createClient : null);
+        const supabaseClient = createClient ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
         let allMenus = [];
         let allShops = [];
@@ -138,7 +137,7 @@
         }
 
         function getShopName(shopId) {
-            const foundShop = allShops.find(s => String(s.id || s.shop_id) === String(shopId));
+            const foundShop = allShops.find(s => String(s.shop_id) === String(shopId));
             return foundShop ? foundShop.shop_name : 'ဆိုင်နာမည်မရှိ';
         }
 
@@ -153,12 +152,9 @@
             event.dataTransfer.setData('text/plain', index);
         }
 
-        // ကတ်ပြားများကို Cart ခလုတ်ဆီသို့ ဆွဲထည့်ခြင်း (Drag and Drop) အလုပ်လုပ်စေရန်
         const cartBtn = document.getElementById('cartBtn');
         if (cartBtn) {
-            cartBtn.addEventListener('dragover', (event) => {
-                event.preventDefault();
-            });
+            cartBtn.addEventListener('dragover', (event) => event.preventDefault());
             cartBtn.addEventListener('drop', (event) => {
                 event.preventDefault();
                 const index = event.dataTransfer.getData('text/plain');
@@ -175,13 +171,19 @@
         }
 
         async function loadDashboardData() {
+            if (!supabaseClient) {
+                console.error("Supabase Client Init Error!");
+                return;
+            }
+
             try {
-                // 1. Shops Fetch First
-                const shopRes = await fetch(`${API_BASE_URL}/shops`);
-                allShops = await shopRes.json();
-                
+                // 1. Fetch Shops
+                const { data: shopData, error: shopErr } = await supabaseClient.from('shops').select('*');
+                if (shopErr) console.error("Shops Fetch Error:", shopErr);
+                allShops = shopData || [];
+
                 const shopContainer = document.getElementById('shopContainer');
-                if (allShops && allShops.length > 0) {
+                if (allShops.length > 0) {
                     shopContainer.innerHTML = allShops.map((shop) => {
                         const shopImageUrl = getDriveDirectUrl(shop.shop_image_url);
                         return `
@@ -190,17 +192,21 @@
                                     <img src="${shopImageUrl}" alt="${shop.shop_name || 'Shop'}" class="w-full h-24 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='https://via.placeholder.com/150'">
                                     <h3 class="font-bold text-sm text-gray-800">${shop.shop_name || 'ဆိုင်နာမည်'}</h3>
                                 </div>
-                                <button onclick="openShopModal('${shop.shop_name}', ${shop.id || shop.shop_id || 'null'})" class="text-pink-600 text-xs border border-pink-600 px-3 py-1 rounded-full mt-2 hover:bg-pink-50">ကြည့်ရန်</button>
+                                <button onclick="openShopModal('${shop.shop_name}', ${shop.shop_id || 'null'})" class="text-pink-600 text-xs border border-pink-600 px-3 py-1 rounded-full mt-2 hover:bg-pink-50">ကြည့်ရန်</button>
                             </div>
                         `;
                     }).join('');
+                } else {
+                    shopContainer.innerHTML = `<p class="text-gray-500 text-sm col-span-2">ဆိုင်များ မရှိသေးပါ။</p>`;
                 }
 
-                // 2. Menus Fetch
-                const menuRes = await fetch(`${API_BASE_URL}/menus`);
-                allMenus = await menuRes.json();
+                // 2. Fetch Menus
+                const { data: menuData, error: menuErr } = await supabaseClient.from('menu').select('*');
+                if (menuErr) console.error("Menu Fetch Error:", menuErr);
+                allMenus = menuData || [];
+
                 const menuContainer = document.getElementById('menuContainer');
-                if (allMenus && allMenus.length > 0) {
+                if (allMenus.length > 0) {
                     menuContainer.innerHTML = allMenus.map((item, index) => {
                         const imageUrl = getDriveDirectUrl(item.image_url);
                         const currentShopName = getShopName(item.shop_id);
@@ -211,7 +217,6 @@
                                     <img src="${imageUrl}" alt="${item.menu_name || 'Menu'}" class="w-full h-28 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='https://via.placeholder.com/150'">
                                     <h3 class="font-bold text-sm text-gray-800">${item.menu_name || 'မီနူးအမည်'}</h3>
                                     <p class="text-xs text-pink-600 font-semibold mt-0.5">🏪 ${currentShopName}</p>
-                                    <p class="text-xs text-gray-400">${item.category || ''}</p>
                                 </div>
                                 <div class="mt-2 flex items-center justify-between">
                                     <span class="text-pink-600 font-bold text-xs">${item.price || 0} ကျပ်</span>
@@ -220,32 +225,38 @@
                             </div>
                         `;
                     }).join('');
+                } else {
+                    menuContainer.innerHTML = `<p class="text-gray-500 text-sm col-span-2">မီနူးများ မရှိသေးပါ။</p>`;
                 }
 
-                // 3. Deli Fetch
-                const deliRes = await fetch(`${API_BASE_URL}/delis`);
-                allDelis = await deliRes.json();
+                // 3. Fetch Delis
+                const { data: deliData, error: deliErr } = await supabaseClient.from('deli').select('*');
+                if (deliErr) console.error("Deli Fetch Error:", deliErr);
+                allDelis = deliData || [];
+
                 const deliContainer = document.getElementById('deliContainer');
                 const deliSelect = document.getElementById('deliSelect');
-                
-                if (allDelis && allDelis.length > 0) {
+
+                if (allDelis.length > 0) {
                     deliContainer.innerHTML = allDelis.map(deli => `
                         <div class="bg-white p-3 rounded-xl shadow flex justify-between items-center">
                             <div>
                                 <h3 class="font-bold text-sm text-gray-800">${deli.deli_name || 'Deli Name'}</h3>
-                                <p class="text-xs text-gray-500">ဖုန်း: ${deli.phone || '-'}</p>
+                                <p class="text-xs text-gray-500">အခြေအနေ: ${deli.status || '-'}</p>
                             </div>
                             <span class="text-pink-600 font-bold text-xs">${deli.price || 0} ကျပ်</span>
                         </div>
                     `).join('');
 
                     deliSelect.innerHTML = `<option value="">Deli ရွေးပါ</option>` + allDelis.map(deli => `
-                        <option value="${deli.deli_name}" data-price="${deli.price || 0}">${deli.deli_name} - ${deli.price || 0} ကျပ် (${deli.phone || ''})</option>
+                        <option value="${deli.deli_id}" data-name="${deli.deli_name}" data-price="${deli.price || 0}">${deli.deli_name} - ${deli.price || 0} ကျပ်</option>
                     `).join('');
+                } else {
+                    deliContainer.innerHTML = `<p class="text-gray-500 text-sm">Deli Services မရှိသေးပါ။</p>`;
                 }
 
             } catch (err) {
-                console.error("Error fetching data:", err);
+                console.error("Error fetching data from Supabase:", err);
             }
         }
 
@@ -279,16 +290,12 @@
         document.getElementById('cartBtn').onclick = () => {
             const list = document.getElementById('cartList');
             const subTotalAmount = document.getElementById('subTotalAmount');
-            const paymentSection = document.getElementById('paymentSection');
-            const shopKpayNo = document.getElementById('shopKpayNo');
-            const shopQrContainer = document.getElementById('shopQrContainer');
 
             if (cart.length === 0) {
                 list.innerHTML = `<p class="text-sm text-gray-500 text-center py-4">ဈေးဝယ်ခြင်းထဲတွင် မီနူးများ မရှိသေးပါ။</p>`;
                 subTotalAmount.innerText = "0 ကျပ်";
                 document.getElementById('deliFeeAmount').innerText = "0 ကျပ်";
                 document.getElementById('totalAmount').innerText = "0 ကျပ်";
-                paymentSection.classList.add('hidden');
             } else {
                 let subTotal = 0;
                 list.innerHTML = cart.map((item, index) => {
@@ -309,20 +316,6 @@
                 }).join('');
                 subTotalAmount.innerText = subTotal.toLocaleString() + " ကျပ်";
                 updateTotalWithDeli();
-
-                const firstItem = cart[0];
-                const matchedShop = allShops.find(s => String(s.id || s.shop_id) === String(firstItem.shop_id) || s.shop_name === firstItem.shop_name);
-
-                if (matchedShop && (matchedShop.kpay_no || matchedShop.kpay_qr_url)) {
-                    shopKpayNo.innerText = `KPay Phone: ${matchedShop.kpay_no || '-'}`;
-                    const qrUrl = getDriveDirectUrl(matchedShop.kpay_qr_url);
-                    shopQrContainer.innerHTML = `<img src="${qrUrl}" class="w-32 h-32 object-contain rounded-lg border bg-white mx-auto" onerror="this.style.display='none'">`;
-                    paymentSection.classList.remove('hidden');
-                } else {
-                    shopKpayNo.innerText = `KPay Phone: (ဤဆိုင်အတွက် KPay နံပါတ် မရှိသေးပါ)`;
-                    shopQrContainer.innerHTML = `<p class="text-xs text-gray-500">QR Code မရှိသေးပါ။</p>`;
-                    paymentSection.classList.remove('hidden');
-                }
             }
             document.getElementById('cartModal').classList.remove('hidden');
         };
@@ -343,12 +336,13 @@
             document.getElementById('cartBtn').click();
         }
 
-        function checkoutOrder() {
+        async function checkoutOrder() {
             const name = document.getElementById('custName').value.trim();
             const phone = document.getElementById('custPhone').value.trim();
             const address = document.getElementById('custAddress').value.trim();
-            const deli = document.getElementById('deliSelect').value;
-            const screenshot = document.getElementById('paymentScreenshot').files.length;
+            const deliSelect = document.getElementById('deliSelect');
+            const deliId = deliSelect.value;
+            const submitBtn = document.getElementById('submitOrderBtn');
 
             if (cart.length === 0) {
                 alert("ဝယ်ယူမည့် မီနူးများ ထည့်ပါဦးရှင်။");
@@ -358,22 +352,68 @@
                 alert("ကျေးဇူးပြု၍ အမည်၊ ဖုန်းနံပါတ်နှင့် လိပ်စာ ဖြည့်စွက်ပေးပါ။");
                 return;
             }
-            if (!deli) {
+            if (!deliId) {
                 alert("ကျေးဇူးပြု၍ Deli Service တစ်ခု ရွေးချယ်ပေးပါ။");
                 return;
             }
-            if (screenshot === 0) {
-                alert("ကျေးဇူးပြု၍ ငွေလွှဲထားသော Screenshot ပုံကို ထည့်သွင်းပေးပါ။");
-                return;
-            }
 
-            alert("Order တင်ခြင်း အောင်မြင်ပါသည်။ ကျေးဇူးတင်ပါတယ်ရှင်!");
-            cart = [];
-            updateCartUI();
-            document.getElementById('cartModal').classList.add('hidden');
+            try {
+                submitBtn.disabled = true;
+                submitBtn.innerText = "Order တင်နေပါသည်...";
+
+                let subTotal = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
+                const selectedOption = deliSelect.options[deliSelect.selectedIndex];
+                let deliFee = Number(selectedOption.dataset.price || 0);
+                let totalAmount = subTotal + deliFee;
+
+                const { data: orderData, error: orderErr } = await supabaseClient
+                    .from('orders')
+                    .insert([{
+                        customer_name: name,
+                        customer_phone: phone,
+                        customer_address: address,
+                        total_amount: totalAmount,
+                        deli_id: Number(deliId),
+                        order_status: 'Pending'
+                    }])
+                    .select();
+
+                if (orderErr) throw orderErr;
+
+                const newOrderId = orderData[0].order_id;
+
+                const orderItems = cart.map(item => ({
+                    order_id: newOrderId,
+                    menu_name: item.menu_name,
+                    price_at_order: Number(item.price || 0),
+                    quantity: 1
+                }));
+
+                const { error: itemsErr } = await supabaseClient
+                    .from('order_items')
+                    .insert(orderItems);
+
+                if (itemsErr) throw itemsErr;
+
+                alert("Order တင်ခြင်း အောင်မြင်ပါသည်။ ကျေးဇူးတင်ပါတယ်ရှင်!");
+                cart = [];
+                updateCartUI();
+                document.getElementById('cartModal').classList.add('hidden');
+
+                document.getElementById('custName').value = '';
+                document.getElementById('custPhone').value = '';
+                document.getElementById('custAddress').value = '';
+                document.getElementById('deliSelect').value = '';
+
+            } catch (err) {
+                console.error("Order Submit Error:", err);
+                alert("Order တင်ရာတွင် အမှားအယွင်း ဖြစ်ပေါ်ခဲ့ပါသည်။ ပြန်လည်ကြိုးစားပေးပါ။");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Order တင်မည် (COD)";
+            }
         }
 
-        // Right-click ကာကွယ်ရန် (Context Menu ပိတ်ရန်)
         document.addEventListener('contextmenu', event => event.preventDefault());
 
         loadDashboardData();
