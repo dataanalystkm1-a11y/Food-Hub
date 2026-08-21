@@ -1,0 +1,25 @@
+img {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-user-drag: none; 
+}
+
+.menu-card {
+    cursor: grab;
+}
+
+.menu-card:active {
+    cursor: grabbing;
+}
+
+/* Button Active Tap Feedback */
+button, .btn {
+    transition: transform 0.1s ease, opacity 0.1s ease;
+    touch-action: manipulation;
+}
+
+button:active, .btn:active {
+    transform: scale(0.92) !important;
+    opacity: 0.8 !important;
+}

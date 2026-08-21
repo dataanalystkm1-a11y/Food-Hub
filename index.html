@@ -3,40 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nway's Delivery App</title>
+    <title>WATI - What to eat?</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Client SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
-        img {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            -webkit-user-drag: none; 
-        }
-        .menu-card {
-            cursor: grab;
-        }
-        .menu-card:active {
-            cursor: grabbing;
-        }
-    </style>
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="bg-gray-100 pb-12">
     <!-- Header -->
-    <header class="bg-pink-600 text-white p-4 shadow-md flex justify-between items-center sticky top-0 z-50">
-        <h1 class="text-xl font-bold">🍔 Nway's Delivery App</h1>
-        <button id="cartBtn" class="bg-white text-pink-600 px-4 py-2 rounded-full font-semibold shadow text-sm flex items-center gap-1">
-            🛒 ဈေးဝယ်ခြင်း (<span id="cartCount">0</span>)
-        </button>
+    <header class="bg-[#B80D0D] text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+            <!-- Logo -->
+            <div class="flex items-center gap-2">
+                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center p-1.5 shadow-md flex-shrink-0">
+                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="#B80D0D" stroke-width="4"/>
+                        <path d="M 22 28 L 22 40 M 27 28 L 27 40 M 32 28 L 32 40 M 22 40 C 22 48 32 48 32 40 L 27 48 L 27 72" fill="none" stroke="#B80D0D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M 72 28 C 65 28 65 42 72 42 C 79 42 79 28 72 28 Z M 72 42 L 72 72" fill="#B80D0D" stroke="#B80D0D" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M 26 48 C 32 75 42 75 48 55 C 54 75 64 75 74 42" fill="none" stroke="#D97706" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M 26 48 C 32 75 42 75 48 55 C 54 75 64 75 74 42" fill="none" stroke="#FBBF24" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                
+                <div class="flex flex-col justify-center">
+                    <h1 class="text-3xl font-extrabold tracking-tight flex items-baseline leading-none">
+                        <span class="text-[#FBBF24]">WA</span>
+                        <span class="text-white">TI</span>
+                    </h1>
+                    <span class="text-[11px] text-white/90 italic font-serif leading-tight mt-0.5 pl-0.5">What to eat?</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-1.5">
+                <button id="ordersBtn" class="bg-red-950/40 hover:bg-red-900/60 text-white/90 px-2.5 py-1.5 rounded-full text-[11px] font-medium flex items-center gap-1 border border-red-400/30 backdrop-blur-sm">
+                    <span>📋</span>
+                    <span>အော်ဒါများ</span>
+                </button>
+
+                <button id="cartBtn" class="bg-[#FBBF24] hover:bg-amber-400 text-gray-900 px-3 py-1.5 rounded-full font-bold shadow-md text-xs flex items-center gap-1 transition-transform active:scale-95">
+                    <span class="text-sm">🛒</span>
+                    <span>မုန့်ခြင်း</span>
+                    <span class="bg-[#B80D0D] text-white text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ml-0.5" id="cartCount">0</span>
+                </button>
+            </div>
+        </div>
     </header>
 
-    <main class="max-w-md mx-auto p-4 space-y-6">
+    <!-- Main Content -->
+    <main class="max-w-md mx-auto p-4 space-y-5">
+        <!-- Search -->
+        <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                🔍
+            </div>
+            <input type="text" id="searchInput" 
+                   placeholder="မီနူး သို့မဟုတ် ဆိုင်နာမည် ရိုက်ရှာပါ..." 
+                   class="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-2xl shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-[#B80D0D] focus:border-transparent transition-all">
+            <button id="clearSearchBtn" class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 font-bold">
+                ✕
+            </button>
+        </div>
+
         <!-- Menus Section -->
         <section>
             <h2 class="text-lg font-bold mb-3 text-gray-800">🔥 လူကြိုက်များသော မီနူးများ (ဆွဲယူပါ သို့မဟုတ် နှိပ်ပါ)</h2>
             <div id="menuContainer" class="grid grid-cols-2 gap-3">
-                <p class="text-gray-500 text-sm col-span-2">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
+                <p class="text-gray-500 text-sm col-span-2 text-center py-4">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </section>
 
@@ -44,15 +79,15 @@
         <section>
             <h2 class="text-lg font-bold mb-3 text-gray-800">🏪 ဆိုင်များ</h2>
             <div id="shopContainer" class="grid grid-cols-2 gap-4">
-                <p class="text-gray-500 text-sm col-span-2">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
+                <p class="text-gray-500 text-sm col-span-2 text-center py-4">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </section>
 
         <!-- Deli Services Section -->
         <section>
             <h2 class="text-lg font-bold mb-3 text-gray-800">🛵 ချိတ်ဆက်ထားသော Deli Services များ</h2>
-            <div id="deliContainer" class="space-y-2">
-                <p class="text-gray-500 text-sm">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
+            <div id="deliContainer" class="grid grid-cols-2 gap-3">
+                <p class="text-gray-500 text-sm col-span-2 text-center py-4">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </section>
     </main>
@@ -60,7 +95,7 @@
     <!-- Cart Modal -->
     <div id="cartModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto">
-            <h2 class="text-lg font-bold mb-3 text-gray-800">🛒 ဈေးဝယ်ခြင်းနှင့် ငွေပေးချေရန်</h2>
+            <h2 class="text-lg font-bold mb-3 text-gray-800">🛒 မုန့်ခြင်းနှင့် ငွေပေးချေရန်</h2>
             
             <div class="space-y-3 mb-4 bg-gray-50 p-3 rounded-xl">
                 <h3 class="text-xs font-bold text-gray-700 uppercase">ဝယ်ယူသူ အချက်အလက်</h3>
@@ -84,344 +119,60 @@
                     </div>
                     <div class="flex justify-between items-center font-bold text-base text-gray-900 pt-1">
                         <span>စုစုပေါင်းကျသင့်ငွေ (Total):</span>
-                        <span id="totalAmount" class="text-pink-600">0 ကျပ်</span>
+                        <span id="totalAmount" class="text-[#B80D0D]">0 ကျပ်</span>
                     </div>
                 </div>
             </div>
 
             <div class="mb-4">
                 <h3 class="text-xs font-bold text-gray-700 uppercase mb-2">Deli ရွေးချယ်ရန်</h3>
-                <select id="deliSelect" onchange="updateTotalWithDeli()" class="w-full text-sm border p-2 rounded-lg bg-white">
+                <select id="deliSelect" class="w-full text-sm border p-2 rounded-lg bg-white">
                     <option value="">Deli ရွေးပါ</option>
                 </select>
             </div>
 
-            <div class="mb-4 p-3 bg-pink-50 rounded-xl text-center">
-                <p class="text-xs font-bold text-pink-700 uppercase">💵 Cash on Delivery (ပစ္စည်းရောက်မှ ငွေချေစနစ်)</p>
+            <div class="mb-4 p-3 bg-red-50 rounded-xl text-center">
+                <p class="text-xs font-bold text-[#B80D0D] uppercase">💵 Cash on Delivery (ပစ္စည်းရောက်မှ ငွေချေစနစ်)</p>
             </div>
 
             <div class="flex gap-2">
-                <button onclick="document.getElementById('cartModal').classList.add('hidden')" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl text-sm font-semibold">ပိတ်ရန်</button>
-                <button id="submitOrderBtn" onclick="checkoutOrder()" class="flex-1 bg-pink-600 text-white py-2 rounded-xl text-sm font-semibold">Order တင်မည် (COD)</button>
+                <button id="closeCartBtn" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl text-sm font-semibold">ပိတ်ရန်</button>
+                <button id="submitOrderBtn" class="flex-1 bg-[#B80D0D] text-white py-2 rounded-xl text-sm font-semibold">Order တင်မည် (COD)</button>
             </div>
         </div>
     </div>
 
     <!-- Shop Detail Modal -->
     <div id="shopModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl max-h-[80vh] overflow-y-auto">
-            <h2 id="shopModalTitle" class="text-lg font-bold mb-2 text-gray-800">ဆိုင်နာမည်</h2>
-            <p class="text-xs text-gray-500 mb-4">ဤဆိုင်မှ ရရှိနိုင်သော မီနူးများစာရင်း</p>
-            <div id="shopMenuList" class="space-y-3 mb-4"></div>
-            <button onclick="document.getElementById('shopModal').classList.add('hidden')" class="w-full bg-pink-600 text-white py-2 rounded-xl text-sm font-semibold">ပိတ်ရန်</button>
+        <div class="bg-white w-full max-w-md rounded-2xl p-5 shadow-xl max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-1">
+                <h2 id="shopModalTitle" class="text-xl font-bold text-gray-800">ဆိုင်နာမည်</h2>
+                <button id="closeShopBtn" class="text-gray-400 text-lg font-bold hover:text-gray-600">✕</button>
+            </div>
+            <p class="text-xs text-gray-500 mb-4">👈 မီနူးများကို ဘေးတိုက် ဆွဲကြည့်နိုင်ပါသည် 👉</p>
+            
+            <div id="shopMenuList" class="flex gap-3 overflow-x-auto pb-4 scroll-smooth snap-x"></div>
+
+            <button id="closeShopBottomBtn" class="w-full bg-[#B80D0D] text-white py-2.5 rounded-xl text-sm font-semibold mt-2">ပိတ်ရန်</button>
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script>
-        const SUPABASE_URL = 'https://xdxyjcuqtajwdiunmahy.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkeHlqY3VxdGFqd2RpdW5tYWh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4NjY5NDcsImV4cCI6MjEwMjQ0Mjk0N30.Jh1Lh_--kiCxAbF1iq86FMnVpm_G7inTzxgzH7bwrLI';
+    <!-- Orders History Modal -->
+    <div id="ordersModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-5 shadow-xl max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center mb-3 border-b pb-2">
+                <h2 class="text-lg font-bold text-gray-800">📋 ဤဖုန်းမှ မှာယူခဲ့သော အော်ဒါများ</h2>
+                <button id="closeOrdersBtn" class="text-gray-400 text-lg font-bold hover:text-gray-600">✕</button>
+            </div>
 
-        // Initialize Supabase Client
-        const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+            <div id="myOrdersList" class="flex-1 overflow-y-auto space-y-3 pr-1">
+                <p class="text-xs text-gray-500 text-center py-6">အော်ဒါမှတ်တမ်းများ ရယူနေပါသည်...</p>
+            </div>
 
-        let cart = JSON.parse(localStorage.getItem('cart')) || [];
-        let allMenus = [];
-        let allShops = [];
-        let allDelis = [];
-
-        function updateCartUI() {
-            document.getElementById('cartCount').innerText = cart.length;
-            localStorage.setItem('cart', JSON.stringify(cart));
-        }
-
-        // Find shop_name by matching shop_id from shops table
-        function getShopName(shopId) {
-            const foundShop = allShops.find(s => String(s.shop_id) === String(shopId));
-            return foundShop ? foundShop.shop_name : 'ဆိုင်နာမည်မရှိ';
-        }
-
-        function addToCart(item) {
-            item.shop_name = getShopName(item.shop_id);
-            cart.push(item);
-            updateCartUI();
-            alert(item.menu_name + " ကို ဈေးဝယ်ခြင်းထဲ ထည့်လိုက်ပါပြီ!");
-        }
-
-        function dragStart(event, index) {
-            event.dataTransfer.setData('text/plain', index);
-        }
-
-        const cartBtn = document.getElementById('cartBtn');
-        if (cartBtn) {
-            cartBtn.addEventListener('dragover', (event) => event.preventDefault());
-            cartBtn.addEventListener('drop', (event) => {
-                event.preventDefault();
-                const index = event.dataTransfer.getData('text/plain');
-                if (index !== "" && allMenus[index]) {
-                    addToCart(allMenus[index]);
-                }
-            });
-        }
-
-        function getDriveDirectUrl(url) {
-            if (!url) return 'https://via.placeholder.com/150';
-            const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-            return match ? `https://lh3.googleusercontent.com/d/${match[1]}` : url;
-        }
-
-        async function loadDashboardData() {
-            if (!supabaseClient) {
-                console.error("Supabase Client Init Error!");
-                return;
-            }
-
-            try {
-                // 1. Fetch Shops
-                const { data: shopData, error: shopErr } = await supabaseClient.from('shops').select('*');
-                if (shopErr) console.error("Shops Fetch Error:", shopErr);
-                allShops = shopData || [];
-
-                const shopContainer = document.getElementById('shopContainer');
-                if (allShops.length > 0) {
-                    shopContainer.innerHTML = allShops.map((shop) => {
-                        const shopImageUrl = getDriveDirectUrl(shop.shop_image_url);
-                        return `
-                            <div class="bg-white p-3 rounded-xl shadow text-center flex flex-col justify-between">
-                                <div>
-                                    <img src="${shopImageUrl}" alt="${shop.shop_name || 'Shop'}" class="w-full h-24 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='https://via.placeholder.com/150'">
-                                    <h3 class="font-bold text-sm text-gray-800">${shop.shop_name || 'ဆိုင်နာမည်'}</h3>
-                                </div>
-                                <button onclick="openShopModal('${shop.shop_name}', ${shop.shop_id})" class="text-pink-600 text-xs border border-pink-600 px-3 py-1 rounded-full mt-2 hover:bg-pink-50">ကြည့်ရန်</button>
-                            </div>
-                        `;
-                    }).join('');
-                } else {
-                    shopContainer.innerHTML = `<p class="text-gray-500 text-sm col-span-2">ဆိုင်များ မရှိသေးပါ။</p>`;
-                }
-
-                // 2. Fetch Menus
-                const { data: menuData, error: menuErr } = await supabaseClient.from('menu').select('*');
-                if (menuErr) console.error("Menu Fetch Error:", menuErr);
-                allMenus = menuData || [];
-
-                const menuContainer = document.getElementById('menuContainer');
-                if (allMenus.length > 0) {
-                    menuContainer.innerHTML = allMenus.map((item, index) => {
-                        const imageUrl = getDriveDirectUrl(item.image_url);
-                        const currentShopName = getShopName(item.shop_id);
-                        return `
-                            <div draggable="true" ondragstart="dragStart(event, ${index})"
-                                 class="menu-card bg-white p-3 rounded-xl shadow flex flex-col justify-between">
-                                <div>
-                                    <img src="${imageUrl}" alt="${item.menu_name || 'Menu'}" class="w-full h-28 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='https://via.placeholder.com/150'">
-                                    <h3 class="font-bold text-sm text-gray-800">${item.menu_name || 'မီနူးအမည်'}</h3>
-                                    <p class="text-xs text-pink-600 font-semibold mt-0.5">🏪 ${currentShopName}</p>
-                                </div>
-                                <div class="mt-2 flex items-center justify-between">
-                                    <span class="text-pink-600 font-bold text-xs">${item.price || 0} ကျပ်</span>
-                                    <button onclick='addToCart(allMenus[${index}])' class="bg-pink-600 text-white text-xs px-2.5 py-1 rounded-lg hover:bg-pink-700">ထည့်မည်</button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                } else {
-                    menuContainer.innerHTML = `<p class="text-gray-500 text-sm col-span-2">မီနူးများ မရှိသေးပါ။</p>`;
-                }
-
-                // 3. Fetch Delis
-                const { data: deliData, error: deliErr } = await supabaseClient.from('deli').select('*');
-                if (deliErr) console.error("Deli Fetch Error:", deliErr);
-                allDelis = deliData || [];
-
-                const deliContainer = document.getElementById('deliContainer');
-                const deliSelect = document.getElementById('deliSelect');
-
-                if (allDelis.length > 0) {
-                    deliContainer.innerHTML = allDelis.map(deli => `
-                        <div class="bg-white p-3 rounded-xl shadow flex justify-between items-center">
-                            <div>
-                                <h3 class="font-bold text-sm text-gray-800">${deli.deli_name || 'Deli Name'}</h3>
-                                <p class="text-xs text-gray-500">အခြေအနေ: ${deli.status || '-'}</p>
-                            </div>
-                            <span class="text-pink-600 font-bold text-xs">${deli.price || 0} ကျပ်</span>
-                        </div>
-                    `).join('');
-
-                    deliSelect.innerHTML = `<option value="">Deli ရွေးပါ</option>` + allDelis.map(deli => `
-                        <option value="${deli.deli_id}" data-name="${deli.deli_name}" data-price="${deli.price || 0}">${deli.deli_name} - ${deli.price || 0} ကျပ်</option>
-                    `).join('');
-                } else {
-                    deliContainer.innerHTML = `<p class="text-gray-500 text-sm">Deli Services မရှိသေးပါ။</p>`;
-                }
-
-            } catch (err) {
-                console.error("Error fetching data from Supabase:", err);
-            }
-        }
-
-        // Open Shop Modal filtering strictly by shop_id
-        function openShopModal(shopName, shopId) {
-            document.getElementById('shopModalTitle').innerText = shopName;
-            const shopMenuList = document.getElementById('shopMenuList');
-            
-            const filteredMenus = allMenus.filter(m => String(m.shop_id) === String(shopId));
-
-            if (filteredMenus.length > 0) {
-                shopMenuList.innerHTML = filteredMenus.map(item => {
-                    const imgUrl = getDriveDirectUrl(item.image_url);
-                    return `
-                        <div class="flex items-center justify-between border-b pb-2">
-                            <div class="flex items-center gap-3">
-                                <img src="${imgUrl}" class="w-12 h-12 object-cover rounded-lg bg-gray-200">
-                                <div>
-                                    <h4 class="font-bold text-sm text-gray-800">${item.menu_name}</h4>
-                                    <p class="text-xs text-pink-600 font-semibold">${item.price} ကျပ်</p>
-                                </div>
-                            </div>
-                            <button onclick='addToCart(${JSON.stringify(item)})' class="bg-pink-600 text-white text-xs px-3 py-1.5 rounded-lg hover:bg-pink-700">ထည့်မည်</button>
-                        </div>
-                    `;
-                }).join('');
-            } else {
-                shopMenuList.innerHTML = `<p class="text-sm text-gray-500 text-center py-4">ဤဆိုင်တွင် မီနူးစာရင်း ထည့်သွင်းထားခြင်း မရှိသေးပါ။</p>`;
-            }
-            document.getElementById('shopModal').classList.remove('hidden');
-        }
-
-        document.getElementById('cartBtn').onclick = () => {
-            const list = document.getElementById('cartList');
-            const subTotalAmount = document.getElementById('subTotalAmount');
-
-            if (cart.length === 0) {
-                list.innerHTML = `<p class="text-sm text-gray-500 text-center py-4">ဈေးဝယ်ခြင်းထဲတွင် မီနူးများ မရှိသေးပါ။</p>`;
-                subTotalAmount.innerText = "0 ကျပ်";
-                document.getElementById('deliFeeAmount').innerText = "0 ကျပ်";
-                document.getElementById('totalAmount').innerText = "0 ကျပ်";
-            } else {
-                let subTotal = 0;
-                list.innerHTML = cart.map((item, index) => {
-                    subTotal += Number(item.price || 0);
-                    const currentShopName = item.shop_name || getShopName(item.shop_id);
-                    return `
-                        <div class="flex justify-between items-center text-sm border-b pb-1">
-                            <div>
-                                <span class="font-bold text-gray-800">${item.menu_name}</span>
-                                <span class="text-xs text-pink-600 font-medium block">ဆိုင်: ${currentShopName}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-pink-600 font-semibold">${item.price} ကျပ်</span>
-                                <button onclick="removeFromCart(${index})" class="text-red-500 text-xs">ဖယ်မည်</button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                subTotalAmount.innerText = subTotal.toLocaleString() + " ကျပ်";
-                updateTotalWithDeli();
-            }
-            document.getElementById('cartModal').classList.remove('hidden');
-        };
-
-        function updateTotalWithDeli() {
-            let subTotal = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
-            const deliSelect = document.getElementById('deliSelect');
-            const selectedOption = deliSelect.options[deliSelect.selectedIndex];
-            let deliFee = selectedOption && selectedOption.dataset.price ? Number(selectedOption.dataset.price) : 0;
-
-            document.getElementById('deliFeeAmount').innerText = deliFee.toLocaleString() + " ကျပ်";
-            document.getElementById('totalAmount').innerText = (subTotal + deliFee).toLocaleString() + " ကျပ်";
-        }
-
-        function removeFromCart(index) {
-            cart.splice(index, 1);
-            updateCartUI();
-            document.getElementById('cartBtn').click();
-        }
-
-        async function checkoutOrder() {
-            const name = document.getElementById('custName').value.trim();
-            const phone = document.getElementById('custPhone').value.trim();
-            const address = document.getElementById('custAddress').value.trim();
-            const deliSelect = document.getElementById('deliSelect');
-            const deliId = deliSelect.value;
-            const submitBtn = document.getElementById('submitOrderBtn');
-
-            if (cart.length === 0) {
-                alert("ဝယ်ယူမည့် မီနူးများ ထည့်ပါဦးရှင်။");
-                return;
-            }
-            if (!name || !phone || !address) {
-                alert("ကျေးဇူးပြု၍ အမည်၊ ဖုန်းနံပါတ်နှင့် လိပ်စာ ဖြည့်စွက်ပေးပါ။");
-                return;
-            }
-            if (!deliId) {
-                alert("ကျေးဇူးပြု၍ Deli Service တစ်ခု ရွေးချယ်ပေးပါ။");
-                return;
-            }
-
-            try {
-                submitBtn.disabled = true;
-                submitBtn.innerText = "Order တင်နေပါသည်...";
-
-                let subTotal = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
-                const selectedOption = deliSelect.options[deliSelect.selectedIndex];
-                let deliFee = Number(selectedOption.dataset.price || 0);
-                let totalAmount = subTotal + deliFee;
-
-                const { data: orderData, error: orderErr } = await supabaseClient
-                    .from('orders')
-                    .insert([{
-                        customer_name: name,
-                        customer_phone: phone,
-                        customer_address: address,
-                        total_amount: totalAmount,
-                        deli_id: Number(deliId),
-                        order_status: 'Pending'
-                    }])
-                    .select();
-
-                if (orderErr) throw orderErr;
-
-                const newOrderId = orderData[0].order_id;
-
-                const orderItems = cart.map(item => ({
-                    order_id: newOrderId,
-                    menu_id: item.menu_id,
-                    quantity: 1,
-                    price_at_order: Number(item.price || 0)
-                }));
-
-                const { error: itemsErr } = await supabaseClient
-                    .from('order_items')
-                    .insert(orderItems);
-
-                if (itemsErr) throw itemsErr;
-
-                alert("Order တင်ခြင်း အောင်မြင်ပါသည်။ ကျေးဇူးတင်ပါတယ်ရှင်!");
-                cart = [];
-                updateCartUI();
-                document.getElementById('cartModal').classList.add('hidden');
-
-                document.getElementById('custName').value = '';
-                document.getElementById('custPhone').value = '';
-                document.getElementById('custAddress').value = '';
-                document.getElementById('deliSelect').value = '';
-
-            } catch (err) {
-                console.error("Order Submit Error:", err);
-                alert("Order တင်ရာတွင် အမှားအယွင်း ဖြစ်ပေါ်ခဲ့ပါသည်။ ပြန်လည်ကြိုးစားပေးပါ။");
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Order တင်မည် (COD)";
-            }
-        }
-
-        document.addEventListener('contextmenu', event => event.preventDefault());
-
-        window.addEventListener('DOMContentLoaded', () => {
-            loadDashboardData();
-            updateCartUI();
-        });
-    </script>
+            <button id="closeOrdersBottomBtn" class="w-full bg-gray-200 text-gray-700 py-2 rounded-xl text-sm font-semibold mt-3">ပိတ်ရန်</button>
+        </div>
+    </div>
+    <!-- Custom Logic Script -->
+    <script src="app.js"></script>
 </body>
 </html>
