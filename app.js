@@ -1,9 +1,4 @@
-const SUPABASE_URL = 'https://xdxyjcuqtajwdiunmahy.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkeHlqY3VxdGFqd2RpdW5tYWh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4NjY5NDcsImV4cCI6MjEwMjQ0Mjk0N30.Jh1Lh_--kiCxAbF1iq86FMnVpm_G7inTzxgzH7bwrLI';
-
-const supabaseClient = (window.supabase && window.supabase.createClient) 
-    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) 
-    : null;
+const API_BASE_URL = 'https://wati-backend-api.onrender.com';
 
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let myOrderIds = JSON.parse(localStorage.getItem('myOrderIds')) || []; // မိမိဖုန်းထဲရှိ Order IDs
@@ -137,22 +132,21 @@ function clearSearch() {
     renderShops(allShops);
 }
 
-// Data Fetching
+// Data Fetching (Using Render Backend API)
 async function loadDashboardData() {
-    if (!supabaseClient) return;
-
     try {
-        const { data: shopData } = await supabaseClient.from('shops').select('*');
-        allShops = shopData || [];
+        const [shopsRes, menusRes, deliRes] = await Promise.all([
+            fetch(`${API_BASE_URL}/shops`),
+            fetch(`${API_BASE_URL}/menus`),
+            fetch(`${API_BASE_URL}/deli`)
+        ]);
 
-        const { data: menuData } = await supabaseClient.from('menu').select('*');
-        allMenus = menuData || [];
+        allShops = await shopsRes.json() || [];
+        allMenus = await menusRes.json() || [];
+        allDelis = await deliRes.json() || [];
 
         renderShops(allShops);
         renderMenus(allMenus);
-
-        const { data: deliData } = await supabaseClient.from('deli').select('*');
-        allDelis = deliData || [];
 
         const deliContainer = document.getElementById('deliContainer');
         const deliSelect = document.getElementById('deliSelect');
@@ -273,13 +267,12 @@ async function openOrdersModal() {
     list.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">အော်ဒါမှတ်တမ်းများ ရယူနေပါသည်...</p>`;
 
     try {
-        const { data, error } = await supabaseClient
-            .from('orders')
-            .select('*')
-            .in('order_id', myOrderIds)
-            .order('order_id', { ascending: false });
-
-        if (error) throw error;
+        const response = await fetch(`${API_BASE_URL}/orders/batch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_ids: myOrderIds })
+        });
+        const data = await response.json();
 
         if (data && data.length > 0) {
             list.innerHTML = data.map(o => `
@@ -326,30 +319,30 @@ async function checkoutOrder() {
         const selectedOption = deliSelect.options[deliSelect.selectedIndex];
         let deliFee = Number(selectedOption.dataset.price || 0);
 
-        const { data: orderData, error: orderErr } = await supabaseClient
-            .from('orders')
-            .insert([{
-                customer_name: name,
-                customer_phone: phone,
-                customer_address: address,
-                total_amount: subTotal + deliFee,
-                deli_id: Number(deliId),
-                order_status: 'Pending'
-            }])
-            .select();
+        const orderPayload = {
+            customer_name: name,
+            customer_phone: phone,
+            customer_address: address,
+            total_amount: subTotal + deliFee,
+            deli_id: Number(deliId),
+            order_status: 'Pending',
+            items: cart.map(item => ({
+                menu_id: item.menu_id,
+                quantity: 1,
+                price_at_order: Number(item.price || 0)
+            }))
+        };
 
-        if (orderErr) throw orderErr;
+        const response = await fetch(`${API_BASE_URL}/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderPayload)
+        });
 
-        const newOrderId = orderData[0].order_id;
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.detail || "Order error");
 
-        const orderItems = cart.map(item => ({
-            order_id: newOrderId,
-            menu_id: item.menu_id,
-            quantity: 1,
-            price_at_order: Number(item.price || 0)
-        }));
-
-        await supabaseClient.from('order_items').insert(orderItems);
+        const newOrderId = result.order_id;
 
         // Save order ID to LocalStorage
         myOrderIds.push(newOrderId);
