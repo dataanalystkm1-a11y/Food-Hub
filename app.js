@@ -132,18 +132,16 @@ function clearSearch() {
     renderShops(allShops);
 }
 
-// Data Fetching (Using Render Backend API)
+// Data Fetching (Shops & Menus from Render, Deli directly from Supabase to prevent 404)
 async function loadDashboardData() {
     try {
-        const [shopsRes, menusRes, deliRes] = await Promise.all([
+        const [shopsRes, menusRes] = await Promise.all([
             fetch(`${API_BASE_URL}/shops`),
-            fetch(`${API_BASE_URL}/menus`),
-            fetch(`${API_BASE_URL}/deli`)
+            fetch(`${API_BASE_URL}/menus`)
         ]);
 
         allShops = await shopsRes.json() || [];
         allMenus = await menusRes.json() || [];
-        allDelis = await deliRes.json() || [];
 
         renderShops(allShops);
         renderMenus(allMenus);
@@ -151,11 +149,22 @@ async function loadDashboardData() {
         const deliContainer = document.getElementById('deliContainer');
         const deliSelect = document.getElementById('deliSelect');
 
+        // Deli များကို Supabase ကနေ တိုက်ရိုက်ဆွဲထုတ်ခြင်း (Backend 404 Error ရှောင်ရန်)
+        const { data: deliData, error: deliError } = await window.supabase.createClient ? 
+            await supabase.from('deli').select('*') : { data: [], error: null };
+
+        if (deliError) {
+            console.error("Supabase Deli Fetch Error:", deliError.message);
+            allDelis = [];
+        } else {
+            allDelis = deliData || [];
+        }
+
         if (allDelis.length > 0) {
             deliContainer.innerHTML = allDelis.map(deli => `
                 <div class="bg-white p-3 rounded-xl shadow flex items-center justify-between">
                     <div>
-                        <h4 class="font-bold text-sm text-gray-800">${deli.deli_name}</h4>
+                        <h4 class="font-bold text-sm text-gray-800">${deli.deli_name || 'Delivery'}</h4>
                         <p class="text-xs text-gray-500">${deli.price || 0} ကျပ်</p>
                     </div>
                     <span class="text-xs bg-red-100 text-[#B80D0D] px-2 py-1 rounded-md font-semibold">Active</span>
@@ -234,7 +243,6 @@ function openCartModal() {
         updateTotalWithDeli();
     }
     
-    // Auto-fill last used contact details
     const lastCust = JSON.parse(localStorage.getItem('lastCustInfo')) || {};
     if (lastCust.name) document.getElementById('custName').value = lastCust.name;
     if (lastCust.phone) document.getElementById('custPhone').value = lastCust.phone;
@@ -344,11 +352,8 @@ async function checkoutOrder() {
 
         const newOrderId = result.order_id;
 
-        // Save order ID to LocalStorage
         myOrderIds.push(newOrderId);
         localStorage.setItem('myOrderIds', JSON.stringify(myOrderIds));
-
-        // Save customer info for convenience
         localStorage.setItem('lastCustInfo', JSON.stringify({ name, phone, address }));
 
         alert(`Order #${newOrderId} တင်ခြင်း အောင်မြင်ပါသည်။ ကျေးဇူးတင်ပါတယ်ရှင်!`);
@@ -370,11 +375,9 @@ window.addEventListener('DOMContentLoaded', () => {
     loadDashboardData();
     updateCartUI();
 
-    // Search Events
     document.getElementById('searchInput').addEventListener('input', handleSearch);
     document.getElementById('clearSearchBtn').onclick = clearSearch;
 
-    // Cart Events
     document.getElementById('cartBtn').onclick = openCartModal;
     document.getElementById('closeCartBtn').onclick = () => {
         playTapSound();
@@ -383,7 +386,6 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('deliSelect').onchange = updateTotalWithDeli;
     document.getElementById('submitOrderBtn').onclick = checkoutOrder;
 
-    // Cart Drag & Drop
     const cartBtn = document.getElementById('cartBtn');
     cartBtn.addEventListener('dragover', (e) => e.preventDefault());
     cartBtn.addEventListener('drop', (e) => {
@@ -394,7 +396,6 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Shop Modal Events
     document.getElementById('closeShopBtn').onclick = () => {
         playTapSound();
         document.getElementById('shopModal').classList.add('hidden');
@@ -404,7 +405,6 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('shopModal').classList.add('hidden');
     };
 
-    // Orders History Modal Events
     document.getElementById('ordersBtn').onclick = openOrdersModal;
     document.getElementById('closeOrdersBtn').onclick = () => {
         playTapSound();
@@ -415,6 +415,5 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('ordersModal').classList.add('hidden');
     };
 
-    // Prevent Right Click
     document.addEventListener('contextmenu', event => event.preventDefault());
 });
