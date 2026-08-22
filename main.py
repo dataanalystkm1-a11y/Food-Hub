@@ -46,9 +46,14 @@ def get_menus():
 # `/deli` လို့ပြောင်းပေးလိုက်ပြီး Supabase ထဲက 'deli' table နဲ့ တိုက်დაချိတ်ပေးလိုက်ပါပြီ
 @app.get("/deli")
 def get_deli():
-    response = supabase.table("deli").select("*").execute()
-    return response.data
-
+    try:
+        response = supabase.table("deli").select("*").execute()
+        print("Deli Data from Supabase:", response.data) # Render logs ထဲမှာ ပေါ်လာဖို့
+        return response.data
+    except Exception as e:
+        print("Error fetching deli:", str(e))
+        return {"error": str(e)}
+    
 @app.post("/orders")
 def create_order(order: Order):
     data = {
