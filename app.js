@@ -132,7 +132,7 @@ function clearSearch() {
     renderShops(allShops);
 }
 
-// Data Fetching (Shops & Menus from Render, Deli directly from Supabase as fallback/primary)
+// Data Fetching (Shops & Menus from Render, Deli directly from Supabase)
 async function loadDashboardData() {
     try {
         const [shopsRes, menusRes] = await Promise.all([
