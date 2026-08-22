@@ -132,24 +132,39 @@ function clearSearch() {
     renderShops(allShops);
 }
 
-// Data Fetching (Shops, Menus & Delis from Render Backend API)
+// Data Fetching (Shops & Menus from Render, Deli directly from Supabase as fallback/primary)
 async function loadDashboardData() {
     try {
-        const [shopsRes, menusRes, delisRes] = await Promise.all([
+        const [shopsRes, menusRes] = await Promise.all([
             fetch(`${API_BASE_URL}/shops`),
-            fetch(`${API_BASE_URL}/menus`),
-            fetch(`${API_BASE_URL}/deli`)
+            fetch(`${API_BASE_URL}/menus`)
         ]);
 
         allShops = await shopsRes.json() || [];
         allMenus = await menusRes.json() || [];
-        allDelis = await delisRes.json() || [];
 
         renderShops(allShops);
         renderMenus(allMenus);
 
         const deliContainer = document.getElementById('deliContainer');
         const deliSelect = document.getElementById('deliSelect');
+
+        let deliData = [];
+        try {
+            const supabaseClient = window.supabase || supabase;
+            if (supabaseClient && typeof supabaseClient.from === 'function') {
+                const { data, error } = await supabaseClient.from('deli').select('*');
+                if (!error) {
+                    deliData = data || [];
+                } else {
+                    console.error("Supabase Deli Fetch Error:", error.message);
+                }
+            }
+        } catch (supErr) {
+            console.error("Supabase connection error:", supErr);
+        }
+
+        allDelis = deliData;
 
         if (allDelis.length > 0) {
             deliContainer.innerHTML = allDelis.map(deli => `
