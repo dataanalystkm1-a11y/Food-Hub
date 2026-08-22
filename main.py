@@ -52,14 +52,14 @@ def get_menus():
     response = supabase.table("menu").select("*").execute()
     return response.data
 
+
 @app.get("/deli")
-def get_deli():
+def get_delis():
     try:
         response = supabase.table("deli").select("*").execute()
         return response.data
     except Exception as e:
-        print("Error fetching deli:", str(e))
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/orders")
 def create_order(order: Order):
