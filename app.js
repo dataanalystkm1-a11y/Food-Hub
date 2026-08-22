@@ -150,15 +150,22 @@ async function loadDashboardData() {
         const deliSelect = document.getElementById('deliSelect');
 
         // Deli များကို Supabase ကနေ တိုက်ရိုက်ဆွဲထုတ်ခြင်း (Backend 404 Error ရှောင်ရန်)
-        const { data: deliData, error: deliError } = await window.supabase.createClient ? 
-            await supabase.from('deli').select('*') : { data: [], error: null };
-
-        if (deliError) {
-            console.error("Supabase Deli Fetch Error:", deliError.message);
-            allDelis = [];
-        } else {
-            allDelis = deliData || [];
+        let deliData = [];
+        try {
+            const supabaseClient = window.supabase || supabase;
+            if (supabaseClient && typeof supabaseClient.from === 'function') {
+                const { data, error } = await supabaseClient.from('deli').select('*');
+                if (!error) {
+                    deliData = data || [];
+                } else {
+                    console.error("Supabase Deli Fetch Error:", error.message);
+                }
+            }
+        } catch (supErr) {
+            console.error("Supabase connection error:", supErr);
         }
+
+        allDelis = deliData;
 
         if (allDelis.length > 0) {
             deliContainer.innerHTML = allDelis.map(deli => `
@@ -193,6 +200,7 @@ function openShopModal(shopName, shopId) {
 
     if (filteredMenus.length > 0) {
         shopMenuList.innerHTML = filteredMenus.map(item => {
+            const originalIndex = allMenus.findIndex(m => m.menu_id === item.menu_id);
             const imgUrl = getDriveDirectUrl(item.image_url);
             return `
                 <div class="snap-start flex-shrink-0 w-36 bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-col justify-between shadow-sm">
@@ -201,7 +209,7 @@ function openShopModal(shopName, shopId) {
                         <h4 class="font-bold text-sm text-gray-800 line-clamp-1">${item.menu_name}</h4>
                         <p class="text-xs text-[#B80D0D] font-bold mt-1 whitespace-nowrap">${item.price || 0} ကျပ်</p>
                     </div>
-                    <button onclick='addToCart(${JSON.stringify(item)})' class="w-full bg-[#B80D0D] text-white text-xs py-1.5 rounded-lg mt-3 font-medium hover:bg-red-700 whitespace-nowrap">ထည့်မည်</button>
+                    <button onclick='addToCart(allMenus[${originalIndex}])' class="w-full bg-[#B80D0D] text-white text-xs py-1.5 rounded-lg mt-3 font-medium hover:bg-red-700 whitespace-nowrap">ထည့်မည်</button>
                 </div>
             `;
         }).join('');
