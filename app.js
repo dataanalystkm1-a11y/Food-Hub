@@ -132,16 +132,18 @@ function clearSearch() {
     renderShops(allShops);
 }
 
-// Data Fetching (Shops & Menus from Render, Deli directly from Supabase)
+// Data Fetching (Shops, Menus & Delis from Render Backend)
 async function loadDashboardData() {
     try {
-        const [shopsRes, menusRes] = await Promise.all([
+        const [shopsRes, menusRes, deliRes] = await Promise.all([
             fetch(`${API_BASE_URL}/shops`),
-            fetch(`${API_BASE_URL}/menus`)
+            fetch(`${API_BASE_URL}/menus`),
+            fetch(`${API_BASE_URL}/deli`)
         ]);
 
         allShops = await shopsRes.json() || [];
         allMenus = await menusRes.json() || [];
+        allDelis = await deliRes.json() || [];
 
         renderShops(allShops);
         renderMenus(allMenus);
@@ -149,36 +151,19 @@ async function loadDashboardData() {
         const deliContainer = document.getElementById('deliContainer');
         const deliSelect = document.getElementById('deliSelect');
 
-        let deliData = [];
-        try {
-            const supabaseClient = window.supabase || supabase;
-            if (supabaseClient && typeof supabaseClient.from === 'function') {
-                const { data, error } = await supabaseClient.from('deli').select('*');
-                if (!error) {
-                    deliData = data || [];
-                } else {
-                    console.error("Supabase Deli Fetch Error:", error.message);
-                }
-            }
-        } catch (supErr) {
-            console.error("Supabase connection error:", supErr);
-        }
-
-        allDelis = deliData;
-
         if (allDelis.length > 0) {
             deliContainer.innerHTML = allDelis.map(deli => `
                 <div class="bg-white p-3 rounded-xl shadow flex items-center justify-between">
                     <div>
                         <h4 class="font-bold text-sm text-gray-800">${deli.deli_name || 'Delivery'}</h4>
-                        <p class="text-xs text-gray-500">${deli.price || 0} ကျပ်</p>
+                        <p class="text-xs text-gray-500">${deli.fees || deli.price || 0} ကျပ်</p>
                     </div>
                     <span class="text-xs bg-red-100 text-[#B80D0D] px-2 py-1 rounded-md font-semibold">Active</span>
                 </div>
             `).join('');
 
             deliSelect.innerHTML = `<option value="">Deli ရွေးပါ</option>` + allDelis.map(deli => `
-                <option value="${deli.deli_id}" data-price="${deli.price || 0}">${deli.deli_name} - ${deli.price || 0} ကျပ်</option>
+                <option value="${deli.deli_id}" data-price="${deli.fees || deli.price || 0}">${deli.deli_name} - ${deli.fees || deli.price || 0} ကျပ်</option>
             `).join('');
         } else {
             deliContainer.innerHTML = `<p class="text-gray-500 text-sm col-span-2 text-center py-4">Deli မရှိသေးပါ။</p>`;
