@@ -82,7 +82,7 @@ def create_order(order: OrderCreate):
         }
         order_res = supabase.table("orders").insert(order_data).execute()
         
-        if not order_res.data:
+        if not order_res or not order_res.data:
             raise HTTPException(status_code=400, detail="Order တင်၍ မရပါ")
         
         new_order_id = order_res.data[0]["order_id"]
@@ -101,6 +101,7 @@ def create_order(order: OrderCreate):
 
         return {"message": "Order successfully created", "order_id": new_order_id}
     except Exception as e:
+        print("ORDER ERROR DETAIL:", str(e))
         raise HTTPException(status_code=500, detail=str(e))
 
 # 5. Get Orders by Batch (Local History အတွက်)
