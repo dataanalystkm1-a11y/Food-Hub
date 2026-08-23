@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://food-deli-app.onrender.com';
+const API_BASE_URL = 'https://wati-backend-api.onrender.com';
 
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let myOrderIds = JSON.parse(localStorage.getItem('myOrderIds')) || []; // မိမိဖုန်းထဲရှိ Order IDs
