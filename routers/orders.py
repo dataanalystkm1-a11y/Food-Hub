@@ -1,22 +1,12 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
-from typing import Optional, List
-from database import supabase  # database.py ထဲက supabase client ကို ယူသုံးမယ်
+from typing import Optional
+from database import supabase
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
 class OrderStatusUpdate(BaseModel):
     order_status: str
-
-# Frontend က ပို့လိုက်မည့် Order ဒေတာပုံစံ (Schema)
-class OrderCreate(BaseModel):
-    customer_name: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    items: Optional[list] = None
-    total_price: Optional[float] = None
-    deli_service: Optional[str] = None
-    payment_method: Optional[str] = None
 
 @router.get("")
 def get_all_orders():
@@ -26,14 +16,26 @@ def get_all_orders():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 👉 ဒီနေရာမှာ Order အသစ်တင်ရန် POST endpoint ကို ထပ်ထည့်ပေးလိုက်ပါတယ်
 @router.post("")
-def create_order(order: OrderCreate):
+async def create_order(request: Request):
     try:
-        # Supabase ရဲ့ orders table ထဲသို့ ဒေတာထည့်သွင်းခြင်း
-        response = supabase.table("orders").insert(order.dict(exclude_unset=True)).execute()
+        body = await request.json()
+        print("Received Frontend Data:", body)
+
+        # Supabase table column နာမည်များနှင့် အတိအကျ ကိုက်ညီအောင် ပြင်ဆင်ခြင်း
+        order_payload = {
+            "customer_name": body.get("customer_name"),
+            "customer_phone": body.get("phone") or body.get("customer_phone"),
+            "customer_address": body.get("address") or body.get("customer_address"),
+            "total_amount": body.get("total_price") or body.get("total_amount"),
+            "deli_id": body.get("deli_id") or body.get("deli"),
+            "order_status": "Pending" # ပုံမှန်အစအနေနဲ့ Pending ထားမယ်
+        }
+
+        response = supabase.table("orders").insert(order_payload).execute()
         return {"success": True, "message": "Order created successfully", "data": response.data}
     except Exception as e:
+        print(f"Insert Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{order_id}/status")
