@@ -22,14 +22,15 @@ async def create_order(request: Request):
         body = await request.json()
         print("Received Frontend Data:", body)
 
-        # Supabase table column နာမည်များနှင့် အတိအကျ ကိုက်ညီအောင် ပြင်ဆင်ခြင်း
+        # Frontend က ပို့လိုက်တဲ့ shop_name နဲ့ deli_name ကိုပါ ထည့်သွင်းခြင်း
         order_payload = {
             "customer_name": body.get("customer_name"),
             "customer_phone": body.get("phone") or body.get("customer_phone"),
             "customer_address": body.get("address") or body.get("customer_address"),
             "total_amount": body.get("total_price") or body.get("total_amount"),
-            "deli_id": body.get("deli_id") or body.get("deli"),
-            "order_status": "Pending" # ပုံမှန်အစအနေနဲ့ Pending ထားမယ်
+            "shop_name": body.get("shop_name"),       # ဆိုင်နာမည်
+            "deli_name": body.get("deli_name"),       # Deli နာမည်
+            "order_status": "Pending"                 # ပုံမှန်အစအနေနဲ့ Pending ထားမယ်
         }
 
         response = supabase.table("orders").insert(order_payload).execute()
