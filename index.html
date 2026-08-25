@@ -67,26 +67,26 @@
             </button>
         </div>
 
-        <!-- Menus Section -->
+        <!-- Menus Section (Max Height & Scroll Added) -->
         <section>
             <h2 class="text-lg font-bold mb-3 text-gray-800">🔥 လူကြိုက်များသော မီနူးများ (ဆွဲယူပါ သို့မဟုတ် နှိပ်ပါ)</h2>
-            <div id="menuContainer" class="grid grid-cols-2 gap-3">
+            <div id="menuContainer" class="grid grid-cols-2 gap-3 max-h-[350px] overflow-y-auto pr-1">
                 <p class="text-gray-500 text-sm col-span-2 text-center py-4">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </section>
 
-        <!-- Shops Section -->
+        <!-- Shops Section (Max Height & Scroll Added) -->
         <section>
             <h2 class="text-lg font-bold mb-3 text-gray-800">🏪 ဆိုင်များ</h2>
-            <div id="shopContainer" class="grid grid-cols-2 gap-4">
+            <div id="shopContainer" class="grid grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-1">
                 <p class="text-gray-500 text-sm col-span-2 text-center py-4">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </section>
 
-        <!-- Deli Services Section -->
+        <!-- Deli Services Section (Max Height & Scroll Added) -->
         <section>
             <h2 class="text-lg font-bold mb-3 text-gray-800">🛵 ချိတ်ဆက်ထားသော Deli Services များ</h2>
-            <div id="deliContainer" class="grid grid-cols-2 gap-3">
+            <div id="deliContainer" class="grid grid-cols-2 gap-3 max-h-[250px] overflow-y-auto pr-1">
                 <p class="text-gray-500 text-sm col-span-2 text-center py-4">ဒေတာများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </section>
@@ -172,15 +172,6 @@
             <button id="closeOrdersBottomBtn" class="w-full bg-gray-200 text-gray-700 py-2 rounded-xl text-sm font-semibold mt-3">ပိတ်ရန်</button>
         </div>
     </div>
-
-    <!-- Direct Supabase Integration script for Deli & App -->
-    <script>
-        // Supabase Configuration (app.js ထဲကအတိုင်း သို့မဟုတ် ဒီမှာထည့်သုံးရန်)
-        // တကယ်လို့ app.js ထဲမှာ supabase client တည်ဆောက်ပြီးသားဆိုရင် ဒီကကုဒ်က အလိုအလျောက် ချိတ်ဆက်ပေးပါမယ်
-        document.addEventListener("DOMContentLoaded", async () => {
-            console.log("WATI App Initialized...");
-        });
-    </script>
 
     <!-- Custom Logic Script -->
     <script src="app.js"></script>
