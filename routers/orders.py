@@ -8,7 +8,6 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
 
 # --- Telegram Bot Configuration ---
 TELEGRAM_BOT_TOKEN = "8453664740:AAGiLC4MPpz7Ce_B2-UuZWHyK2TKA35Mj0Q"  # နွေးရဲ့ Bot Token
-ADMIN_CHAT_ID = "5921089974"             # ဆိုင်ရှင် Chat ID
 DELIVERY_CHAT_ID = "7295294892"          # Deli Team Chat ID
 
 def send_telegram_notification(chat_id: str, message: str):
@@ -20,7 +19,6 @@ def send_telegram_notification(chat_id: str, message: str):
     payload = {
         "chat_id": chat_id,
         "text": message
-        # Plain text အနေနဲ့ ပို့ပေးမည် (Formatting error ကင်းစေရန်)
     }
     try:
         response = requests.post(url, json=payload)
@@ -100,40 +98,97 @@ async def create_order(request: Request):
         created_order = response.data[0] if response.data else {}
         order_id = created_order.get("order_id", "---")
 
+        # 🛒 Order Items များကို Supabase သို့ ထည့်သွင်းခြင်း နှင့် ဆိုင်အလိုက် စုစည်းခြင်း
+        shop_items_map = {}  # { shop_id: { "shop_name": ..., "chat_id": ..., "items": [...] } }
+
         if created_order and "order_id" in created_order and items:
             for item in items:
                 menu_id = item.get("menu_id") or item.get("id")
                 if not menu_id:
                     continue
 
+                qty = int(item.get("quantity", 1))
+                price = float(item.get("price", 0))
+
                 item_payload = {
                     "order_id": order_id,
                     "menu_id": menu_id,
-                    "quantity": item.get("quantity", 1),
-                    "price": item.get("price", 0)
+                    "quantity": qty,
+                    "price": price
                 }
                 try:
                     supabase.table("order_items").insert(item_payload).execute()
                 except Exception as sub_err:
                     print(f"Order Item Insert Error: {sub_err}")
 
-        # --- ဆိုင်အတွက် မီနူးတန်ဖိုး စုစုပေါင်း တွက်ချက်ခြင်း (Deli ခ မပါ) ---
-        menu_total = sum(float(item.get("price", 0)) * int(item.get("quantity", 1)) for item in items) if items else float(total_price or 0)
+                # Supabase မှ မီနူးနှင့် ဆိုင်အချက်အလက်များကို ဆွဲထုတ်၍ ဆိုင်အလိုက် Group ဖွဲ့ရန်
+                try:
+                    menu_res = supabase.table("menu").select("*, shops(*)").eq("menu_id", menu_id).execute()
+                    if menu_res.data:
+                        menu_data = menu_res.data[0]
+                        shop_info = menu_data.get("shops") or {}
+                        s_id = shop_info.get("shop_id")
+                        s_name = shop_info.get("shop_name", shop_name)
+                        
+                        if s_id:
+                            if s_id not in shop_items_map:
+                                shop_items_map[s_id] = {
+                                    "shop_name": s_name,
+                                    "chat_id": shop_info.get("chat_id"),
+                                    "items": []
+                                }
+                            shop_items_map[s_id]["items"].append({
+                                "menu_name": menu_data.get("menu_name", item.get("menu_name", "Item")),
+                                "quantity": qty,
+                                "price": price
+                            })
+                except Exception as group_err:
+                    print(f"Shop Grouping Error: {group_err}")
 
-        # 🔔 Telegram Notifications ပို့ခြင်း
-        
-        # 1. ဆိုင်ရှင် (Admin) ဘက်သို့ (Customer နာမည်ပါမည်၊ ဖုန်း/လိပ်စာမပါ၊ Deli ခမပါဘဲ မီနူး Total သီးသန့်ပါမည်)
-        admin_msg = (
-            f"[Order အသစ်ဝင်ရောက်ပါသည်! #ID: {order_id}]\n\n"
-            f"👤 ဝယ်ယူသူ: {cust_name}\n"
-            f"ဆိုင်: {shop_name}\n"
-            f"မီနူး: {combined_menu_names}\n"
-            f"ကျသင့်ငွေ (မီနူးစုစုပေါင်း): {menu_total:,.0f} ကျပ်\n"
-            f"ရွေးချယ်ထားသော Deli: {deli_name}"
-        )
-        send_telegram_notification(ADMIN_CHAT_ID, admin_msg)
+        # 🔔 1. ဆိုင်တစ်ဆိုင်ချင်းစီဆီသို့ သီးသန့် Telegram Message များ ပို့ခြင်း
+        if shop_items_map:
+            for s_id, s_data in shop_items_map.items():
+                s_chat_id = s_data.get("chat_id")
+                s_n = s_data.get("shop_name")
+                s_itms = s_data.get("items", [])
 
-        # 2. Delivery ဘက်သို့ (Customer အချက်အလက် အပြည့်အစုံနှင့် ကျသင့်ငွေအစုံပါဝင်သည်)
+                # ဆိုင်အလိုက် မီနူးစာရင်းနှင့် စုစုပေါင်းငွေ တွက်ချက်ခြင်း
+                menu_lines = []
+                shop_menu_total = 0
+                for itm in s_itms:
+                    line_total = itm["price"] * itm["quantity"]
+                    shop_menu_total += line_total
+                    menu_lines.append(f"- {itm['menu_name']} ({itm['quantity']} ခု) - {line_total:,.0f} ကျပ်")
+
+                shop_menu_text = "\n".join(menu_lines) if menu_lines else combined_menu_names
+
+                shop_msg = (
+                    f"[Order အသစ်ဝင်ရောက်ပါသည်! #ID: {order_id}]\n\n"
+                    f"👤 ဝယ်ယူသူ: {cust_name}\n"
+                    f"ဆိုင်: {s_n}\n"
+                    f"မီနူးများ:\n{shop_menu_text}\n\n"
+                    f"ကျသင့်ငွေ (မီနူးစုစုပေါင်း): {shop_menu_total:,.0f} ကျပ်\n"
+                    f"ရွေးချယ်ထားသော Deli: {deli_name}"
+                )
+
+                if s_chat_id:
+                    send_telegram_notification(str(s_chat_id), shop_msg)
+                else:
+                    print(f"Shop '{s_n}' has no Chat ID configured. Skipping Telegram notification.")
+        else:
+            # Fallback (ဆိုင်အချက်အလက် မမိလိုက်ရင် ရှေ့ကအတိုင်း ပို့မည်)
+            menu_total = sum(float(item.get("price", 0)) * int(item.get("quantity", 1)) for item in items) if items else float(total_price or 0)
+            fallback_admin_msg = (
+                f"[Order အသစ်ဝင်ရောက်ပါသည်! #ID: {order_id}]\n\n"
+                f"👤 ဝယ်ယူသူ: {cust_name}\n"
+                f"ဆိုင်: {shop_name}\n"
+                f"မီနူး: {combined_menu_names}\n"
+                f"ကျသင့်ငွေ (မီနူးစုစုပေါင်း): {menu_total:,.0f} ကျပ်\n"
+                f"ရွေးချယ်ထားသော Deli: {deli_name}"
+            )
+            send_telegram_notification("5921089974", fallback_admin_msg)
+
+        # 🔔 2. Delivery ဘက်သို့ (Customer အချက်အလက် အပြည့်အစုံနှင့် ကျသင့်ငွေအစုံပါဝင်သည်)
         deli_msg = (
             f"[Delivery ပို့ရန် Order အသစ်! #ID: {order_id}]\n\n"
             f"ဝယ်ယူသူ: {cust_name}\n"
