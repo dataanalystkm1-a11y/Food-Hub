@@ -7,21 +7,24 @@ from database import supabase
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
 # --- Telegram Bot Configuration ---
-TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"  # နွေးရဲ့ Bot Token ထည့်ရန်
-ADMIN_CHAT_ID = "SHOP_ADMIN_CHAT_ID"             # ဆိုင်ရှင် Chat ID ထည့်ရန်
-DELIVERY_CHAT_ID = "DELIVERY_TEAM_CHAT_ID"       # Deli Team Chat ID ထည့်ရန်
+TELEGRAM_BOT_TOKEN = "8453664740:AAGiLC4MPpz7Ce_B2-UuZWHyK2TKA35Mj0Q"  # နွေးရဲ့ Bot Token
+ADMIN_CHAT_ID = "5921089974"             # ဆိုင်ရှင် Chat ID
+DELIVERY_CHAT_ID = "7295294892"          # Deli Team Chat ID
 
 def send_telegram_notification(chat_id: str, message: str):
-    if not TELEGRAM_BOT_TOKEN or chat_id == "YOUR_CHAT_ID" or chat_id == "SHOP_ADMIN_CHAT_ID":
+    if not TELEGRAM_BOT_TOKEN or not chat_id:
+        print("Telegram Warning: Token or Chat ID is missing.")
         return
+    
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id": chat_id,
-        "text": message,
-        "parse_mode": "Markdown"
+        "text": message
+        # parse_mode ကို ခဏဖြုတ်ထားပြီး Plain text အနေနဲ့ ပို့ပေးမည် (Formatting error ကင်းစေရန်)
     }
     try:
-        requests.post(url, json=payload)
+        response = requests.post(url, json=payload)
+        print(f"Telegram Response for {chat_id}:", response.text)  # Terminal ထဲမှာ အောင်မြင်/မအောင်မြင် စစ်ဆေးရန်
     except Exception as e:
         print(f"Telegram Notification Error: {e}")
 
@@ -118,24 +121,24 @@ async def create_order(request: Request):
         
         # 1. ဆိုင်ရှင် (Admin) ဘက်သို့ (Customer ဖုန်းနံပါတ်နှင့် လိပ်စာ မပါဝင်ပါ)
         admin_msg = (
-            f"🔔 *Order အသစ်ဝင်ရောက်ပါသည်!* (#ID: {order_id})\n\n"
-            f"🏬 ဆိုင်: {shop_name}\n"
-            f"🛒 မီနူး: {combined_menu_names}\n"
-            f"💰 ကျသင့်ငွေ: {float(total_price or 0):,.0f} ကျပ်\n"
-            f"🚚 ရွေးချယ်ထားသော Deli: {deli_name}"
+            f"[Order အသစ်ဝင်ရောက်ပါသည်! #ID: {order_id}]\n\n"
+            f"ဆိုင်: {shop_name}\n"
+            f"မီနူး: {combined_menu_names}\n"
+            f"ကျသင့်ငွေ: {float(total_price or 0):,.0f} ကျပ်\n"
+            f"ရွေးချယ်ထားသော Deli: {deli_name}"
         )
         send_telegram_notification(ADMIN_CHAT_ID, admin_msg)
 
         # 2. Delivery ဘက်သို့ (Customer အချက်အလက် အပြည့်အစုံပါဝင်သည်)
         deli_msg = (
-            f"📦 *Delivery ပို့ရန် Order အသစ်!* (#ID: {order_id})\n\n"
-            f"👤 ဝယ်ယူသူ: {cust_name}\n"
-            f"📞 ဖုန်းနံပါတ်: {cust_phone}\n"
-            f"📍 လိပ်စာ: {cust_address}\n"
-            f"📝 မှတ်ချက်: {cust_remark or 'မရှိပါ'}\n\n"
-            f"🏬 ဆိုင်: {shop_name}\n"
-            f"🛒 မီနူး: {combined_menu_names}\n"
-            f"💵 ကောက်ခံရန်ငွေ: {float(total_price or 0):,.0f} ကျပ်"
+            f"[Delivery ပို့ရန် Order အသစ်! #ID: {order_id}]\n\n"
+            f"ဝယ်ယူသူ: {cust_name}\n"
+            f"ဖုန်းနံပါတ်: {cust_phone}\n"
+            f"လိပ်စာ: {cust_address}\n"
+            f"မှတ်ချက်: {cust_remark or 'မရှိပါ'}\n\n"
+            f"ဆိုင်: {shop_name}\n"
+            f"မီနူး: {combined_menu_names}\n"
+            f"ကောက်ခံရန်ငွေ: {float(total_price or 0):,.0f} ကျပ်"
         )
         send_telegram_notification(DELIVERY_CHAT_ID, deli_msg)
 
