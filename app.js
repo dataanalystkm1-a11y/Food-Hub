@@ -60,7 +60,7 @@ function renderMenus(menusToRender) {
             const currentShopName = getShopName(item.shop_id);
             return `
                 <div draggable="true" ondragstart="dragStart(event, ${originalIndex})"
-                     class="menu-card bg-white p-3 rounded-xl shadow flex flex-col justify-between">
+                     class="snap-start flex-shrink-0 w-40 bg-white p-3 rounded-xl shadow flex flex-col justify-between">
                     <div>
                         <img src="${imageUrl}" class="w-full h-28 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='https://via.placeholder.com/150'">
                         <h3 class="font-bold text-sm text-gray-800 line-clamp-1">${item.menu_name || 'မီနူးအမည်'}</h3>
@@ -84,7 +84,7 @@ function renderShops(shopsToRender) {
         shopContainer.innerHTML = shopsToRender.map((shop) => {
             const shopImageUrl = getDriveDirectUrl(shop.shop_image_url);
             return `
-                <div class="bg-white p-3 rounded-xl shadow text-center flex flex-col justify-between">
+                <div class="snap-start flex-shrink-0 w-36 bg-white p-3 rounded-xl shadow text-center flex flex-col justify-between">
                     <div>
                         <img src="${shopImageUrl}" class="w-full h-24 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='https://via.placeholder.com/150'">
                         <h3 class="font-bold text-sm text-gray-800 line-clamp-1">${shop.shop_name || 'ဆိုင်နာမည်'}</h3>
@@ -153,12 +153,12 @@ async function loadDashboardData() {
 
         if (allDelis.length > 0) {
             deliContainer.innerHTML = allDelis.map(deli => `
-                <div class="bg-white p-3 rounded-xl shadow flex items-center justify-between">
+                <div class="snap-start flex-shrink-0 w-44 bg-white p-3 rounded-xl shadow flex items-center justify-between">
                     <div>
-                        <h4 class="font-bold text-sm text-gray-800">${deli.deli_name || 'Delivery'}</h4>
-                        <p class="text-xs text-gray-500">${deli.fees || deli.price || 0} ကျပ်</p>
+                        <h4 class="font-bold text-sm text-gray-800 line-clamp-1">${deli.deli_name || 'Delivery'}</h4>
+                        <p class="text-xs text-gray-500 mt-0.5">${deli.fees || deli.price || 0} ကျပ်</p>
                     </div>
-                    <span class="text-xs bg-red-100 text-[#B80D0D] px-2 py-1 rounded-md font-semibold">Active</span>
+                    <span class="text-xs bg-red-100 text-[#B80D0D] px-2 py-1 rounded-md font-semibold whitespace-nowrap">Active</span>
                 </div>
             `).join('');
 
@@ -284,6 +284,9 @@ async function openOrdersModal() {
                     <div class="text-xs text-gray-600 space-y-0.5">
                         <p>👤 ${o.customer_name} (${o.customer_phone})</p>
                         <p>📍 ${o.customer_address}</p>
+                        ${o.shop_name ? `<p>🏪 ဆိုင်: ${o.shop_name}</p>` : ''}
+                        ${o.menu_name ? `<p>🍲 မီနူး: ${o.menu_name}</p>` : ''}
+                        ${o.deli_name ? `<p>🛵 Deli: ${o.deli_name}</p>` : ''}
                         <p class="font-bold text-[#B80D0D] mt-1">ကျသင့်ငွေ: ${Number(o.total_amount || 0).toLocaleString()} ကျပ်</p>
                     </div>
                 </div>
@@ -319,11 +322,21 @@ async function checkoutOrder() {
         const selectedOption = deliSelect.options[deliSelect.selectedIndex];
         let deliFee = Number(selectedOption.dataset.price || 0);
 
+        // ရွေးချယ်ထားသော Deli ရဲ့ နာမည်ကို ယူရန်
+        const selectedDeliNameText = selectedOption ? selectedOption.text.split(' - ')[0] : '';
+
+        // မီနူးနာမည်များနှင့် ဆိုင်နာမည်များကို စုစည်းရန်
+        const menuNamesStr = cart.map(item => item.menu_name).join(', ');
+        const shopNamesStr = [...new Set(cart.map(item => item.shop_name))].join(', ');
+
         const orderPayload = {
             customer_name: name,
             customer_phone: phone,
             customer_address: address,
             total_amount: subTotal + deliFee,
+            shop_name: shopNamesStr,         // 👈 ဆိုင်နာမည် ထည့်သွင်းခြင်း
+            deli_name: selectedDeliNameText, // 👈 Deli နာမည် ထည့်သွင်းခြင်း
+            menu_name: menuNamesStr,         // 👈 မီနူးနာမည်များ ထည့်သွင်းခြင်း
             deli_id: Number(deliId),
             order_status: 'Pending',
             items: cart.map(item => ({
@@ -342,13 +355,15 @@ async function checkoutOrder() {
         const result = await response.json();
         if (!response.ok) throw new Error(result.detail || "Order error");
 
-        const newOrderId = result.order_id;
+        const newOrderId = result.order_id || (result.data && result.data[0] ? result.data[0].order_id : null);
 
-        myOrderIds.push(newOrderId);
-        localStorage.setItem('myOrderIds', JSON.stringify(myOrderIds));
+        if (newOrderId) {
+            myOrderIds.push(newOrderId);
+            localStorage.setItem('myOrderIds', JSON.stringify(myOrderIds));
+        }
         localStorage.setItem('lastCustInfo', JSON.stringify({ name, phone, address }));
 
-        alert(`Order #${newOrderId} တင်ခြင်း အောင်မြင်ပါသည်။ ကျေးဇူးတင်ပါတယ်ရှင်!`);
+        alert(`Order တင်ခြင်း အောင်မြင်ပါသည်။ ကျေးဇူးတင်ပါတယ်ရှင်!`);
         cart = [];
         updateCartUI();
         document.getElementById('cartModal').classList.add('hidden');
