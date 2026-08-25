@@ -1,9 +1,29 @@
+import requests
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import List, Optional, Any
 from database import supabase
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
+
+# --- Telegram Bot Configuration ---
+TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"  # နွေးရဲ့ Bot Token ထည့်ရန်
+ADMIN_CHAT_ID = "SHOP_ADMIN_CHAT_ID"             # ဆိုင်ရှင် Chat ID ထည့်ရန်
+DELIVERY_CHAT_ID = "DELIVERY_TEAM_CHAT_ID"       # Deli Team Chat ID ထည့်ရန်
+
+def send_telegram_notification(chat_id: str, message: str):
+    if not TELEGRAM_BOT_TOKEN or chat_id == "YOUR_CHAT_ID" or chat_id == "SHOP_ADMIN_CHAT_ID":
+        return
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": message,
+        "parse_mode": "Markdown"
+    }
+    try:
+        requests.post(url, json=payload)
+    except Exception as e:
+        print(f"Telegram Notification Error: {e}")
 
 class OrderStatusUpdate(BaseModel):
     order_status: str
@@ -52,13 +72,21 @@ async def create_order(request: Request):
         # deli_id ကို frontend က ပို့လာသည်များကို ဖမ်းယူခြင်း
         deli_id = body.get("deli_id") or body.get("deli")
 
+        cust_name = body.get("customer_name") or body.get("name")
+        cust_phone = body.get("phone") or body.get("customer_phone")
+        cust_address = body.get("address") or body.get("customer_address")
+        cust_remark = body.get("customer_remark") or body.get("remark", "")
+        total_price = body.get("total_price") or body.get("total_amount")
+        shop_name = body.get("shop_name", "ဆိုင်")
+        deli_name = body.get("deli_name", "Deli")
+
         order_payload = {
-            "customer_name": body.get("customer_name") or body.get("name"),
-            "customer_phone": body.get("phone") or body.get("customer_phone"),
-            "customer_address": body.get("address") or body.get("customer_address"),
-            "total_amount": body.get("total_price") or body.get("total_amount"),
-            "shop_name": body.get("shop_name"),
-            "deli_name": body.get("deli_name"),
+            "customer_name": cust_name,
+            "customer_phone": cust_phone,
+            "customer_address": cust_address,
+            "total_amount": total_price,
+            "shop_name": shop_name,
+            "deli_name": deli_name,
             "deli_id": deli_id,  # deli_id ထည့်သွင်းပေးခြင်း
             "menu_name": combined_menu_names,
             "order_status": "Pending"
@@ -67,8 +95,9 @@ async def create_order(request: Request):
         response = supabase.table("orders").insert(order_payload).execute()
         
         created_order = response.data[0] if response.data else {}
+        order_id = created_order.get("order_id", "---")
+
         if created_order and "order_id" in created_order and items:
-            order_id = created_order["order_id"]
             for item in items:
                 menu_id = item.get("menu_id") or item.get("id")
                 if not menu_id:
@@ -85,11 +114,36 @@ async def create_order(request: Request):
                 except Exception as sub_err:
                     print(f"Order Item Insert Error: {sub_err}")
 
+        # 🔔 Telegram Notifications ပို့ခြင်း (ဆိုင်ဘက်နှင့် Deli ဘက် သီးသန့်စီ)
+        
+        # 1. ဆိုင်ရှင် (Admin) ဘက်သို့ (Customer ဖုန်းနံပါတ်နှင့် လိပ်စာ မပါဝင်ပါ)
+        admin_msg = (
+            f"🔔 *Order အသစ်ဝင်ရောက်ပါသည်!* (#ID: {order_id})\n\n"
+            f"🏬 ဆိုင်: {shop_name}\n"
+            f"🛒 မီနူး: {combined_menu_names}\n"
+            f"💰 ကျသင့်ငွေ: {float(total_price or 0):,.0f} ကျပ်\n"
+            f"🚚 ရွေးချယ်ထားသော Deli: {deli_name}"
+        )
+        send_telegram_notification(ADMIN_CHAT_ID, admin_msg)
+
+        # 2. Delivery ဘက်သို့ (Customer အချက်အလက် အပြည့်အစုံပါဝင်သည်)
+        deli_msg = (
+            f"📦 *Delivery ပို့ရန် Order အသစ်!* (#ID: {order_id})\n\n"
+            f"👤 ဝယ်ယူသူ: {cust_name}\n"
+            f"📞 ဖုန်းနံပါတ်: {cust_phone}\n"
+            f"📍 လိပ်စာ: {cust_address}\n"
+            f"📝 မှတ်ချက်: {cust_remark or 'မရှိပါ'}\n\n"
+            f"🏬 ဆိုင်: {shop_name}\n"
+            f"🛒 မီနူး: {combined_menu_names}\n"
+            f"💵 ကောက်ခံရန်ငွေ: {float(total_price or 0):,.0f} ကျပ်"
+        )
+        send_telegram_notification(DELIVERY_CHAT_ID, deli_msg)
+
         # Frontend က order_id ကို လွယ်ကူစွာ ဖမ်းနိုင်ရန် order_id ထည့်ပေးလိုက်ပါပြီ
         return {
             "success": True, 
             "message": "Order created successfully", 
-            "order_id": created_order.get("order_id"), 
+            "order_id": order_id, 
             "data": response.data
         }
     except Exception as e:
