@@ -253,7 +253,7 @@ function updateTotalWithDeli() {
     document.getElementById('totalAmount').innerText = (subTotal + deliFee).toLocaleString() + " ကျပ်";
 }
 
-// Active & Real-time Order Tracking (Completed orders ကို ဖယ်ထုတ်ပြီး ရှင်သန်ဆဲ အော်ဒါများကိုသာ ပြသခြင်း)
+// Active & Real-time Order Tracking
 async function openOrdersModal() {
     playTapSound();
     const list = document.getElementById('myOrdersList');
@@ -274,7 +274,6 @@ async function openOrdersModal() {
         });
         const data = await response.json();
 
-        // completed မဖြစ်သေးသော Active orders များကိုသာ စစ်ထုတ်မည်
         const activeOrders = (data || []).filter(o => 
             (o.order_status || 'Pending').toLowerCase() !== 'completed'
         );
@@ -351,7 +350,7 @@ async function checkoutOrder() {
             items: cart.map(item => ({
                 menu_id: item.menu_id,
                 quantity: 1,
-                price_at_order: Number(item.price || 0)
+                price: Number(item.price || 0)
             }))
         };
 
@@ -364,11 +363,19 @@ async function checkoutOrder() {
         const result = await response.json();
         if (!response.ok) throw new Error(result.detail || "Order error");
 
-        const newOrderId = result.order_id || (result.data && result.data[0] ? result.data[0].order_id : null);
+        // 🛠️ order_id ကို ပိုမိုသေချာစွာ ဆွဲထုတ်ခြင်း (Backend က ပုံစံအမျိုးမျိုးနဲ့ ပြန်လာနိုင်တာမို့ အားလုံးကို ခြုံမိစေရန်)
+        let newOrderId = null;
+        if (result.order_id) {
+            newOrderId = result.order_id;
+        } else if (result.data && Array.isArray(result.data) && result.data.length > 0) {
+            newOrderId = result.data[0].order_id || result.data[0].id;
+        }
 
         if (newOrderId) {
-            myOrderIds.push(newOrderId);
-            localStorage.setItem('myOrderIds', JSON.stringify(myOrderIds));
+            if (!myOrderIds.includes(newOrderId)) {
+                myOrderIds.push(newOrderId);
+                localStorage.setItem('myOrderIds', JSON.stringify(myOrderIds));
+            }
         }
         localStorage.setItem('lastCustInfo', JSON.stringify({ name, phone, address }));
 

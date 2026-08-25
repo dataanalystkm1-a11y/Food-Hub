@@ -19,7 +19,6 @@ def get_all_orders():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 📌 Batch Orders Endpoint (Error လုံးဝမတက်အောင် safe ဖြစ်အောင် လုပ်ထားသည်)
 @router.post("/batch")
 async def get_batch_orders(request: Request):
     try:
@@ -50,6 +49,9 @@ async def create_order(request: Request):
         
         combined_menu_names = ", ".join(menu_names_list) if menu_names_list else body.get("menu_name")
 
+        # deli_id ကို frontend က ပို့လာသည်များကို ဖမ်းယူခြင်း
+        deli_id = body.get("deli_id") or body.get("deli")
+
         order_payload = {
             "customer_name": body.get("customer_name") or body.get("name"),
             "customer_phone": body.get("phone") or body.get("customer_phone"),
@@ -57,6 +59,7 @@ async def create_order(request: Request):
             "total_amount": body.get("total_price") or body.get("total_amount"),
             "shop_name": body.get("shop_name"),
             "deli_name": body.get("deli_name"),
+            "deli_id": deli_id,  # 👈 deli_id ထည့်သွင်းပေးခြင်း
             "menu_name": combined_menu_names,
             "order_status": "Pending"
         }
