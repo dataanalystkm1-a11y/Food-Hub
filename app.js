@@ -18,8 +18,18 @@ function playTapSound() {
 // Helpers
 function getDriveDirectUrl(url) {
     if (!url || url.trim() === "") return FALLBACK_IMAGE;
+    // Google Drive link ဖြစ်နေရင် direct image link [1mhttps://lh3.googleusercontent.com/d/...[0m သို့ ပြောင်းပေးခြင်း
     const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    return match ? `https://lh3.googleusercontent.com/d/${match[1]}` : url;
+    if (match) {
+        return `https://lh3.googleusercontent.com/d/${match[1]}`;
+    }
+    // Shared ID ပုံစံ (id=...) ဖြစ်နေရင်လည်း စစ်ဆေးရန်
+    const urlParams = new URLSearchParams(url.split('?')[1]);
+    const fileId = urlParams.get('id');
+    if (fileId) {
+        return `https://lh3.googleusercontent.com/d/${fileId}`;
+    }
+    return url;
 }
 
 function getShopName(shopId) {
@@ -64,7 +74,7 @@ function renderMenus(menusToRender) {
                 <div draggable="true" ondragstart="dragStart(event, ${originalIndex})"
                      class="snap-start flex-shrink-0 w-40 bg-white p-3 rounded-xl shadow flex flex-col justify-between">
                     <div>
-                        <img src="${imageUrl}" class="w-full h-28 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='${FALLBACK_IMAGE}'">
+                        <img src="${imageUrl}" class="w-full h-28 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.onerror=null; this.src='${FALLBACK_IMAGE}';">
                         <h3 class="font-bold text-sm text-gray-800 line-clamp-1">${item.menu_name || 'မီနူးအမည်'}</h3>
                         <p class="text-xs text-[#B80D0D] font-medium mt-0.5 line-clamp-1">🏪 ${currentShopName}</p>
                     </div>
@@ -88,7 +98,7 @@ function renderShops(shopsToRender) {
             return `
                 <div class="snap-start flex-shrink-0 w-36 bg-white p-3 rounded-xl shadow text-center flex flex-col justify-between">
                     <div>
-                        <img src="${shopImageUrl}" class="w-full h-24 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='${FALLBACK_IMAGE}'">
+                        <img src="${shopImageUrl}" class="w-full h-24 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.onerror=null; this.src='${FALLBACK_IMAGE}';">
                         <h3 class="font-bold text-sm text-gray-800 line-clamp-1">${shop.shop_name || 'ဆိုင်နာမည်'}</h3>
                     </div>
                     <button onclick="openShopModal('${shop.shop_name}', ${shop.shop_id})" class="text-[#B80D0D] text-xs border border-[#B80D0D] px-3 py-1 rounded-full mt-2 hover:bg-red-50 font-medium">ကြည့်ရန်</button>
@@ -191,7 +201,7 @@ function openShopModal(shopName, shopId) {
             return `
                 <div class="snap-start flex-shrink-0 w-36 bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-col justify-between shadow-sm">
                     <div>
-                        <img src="${imgUrl}" class="w-full h-24 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='${FALLBACK_IMAGE}'">
+                        <img src="${imgUrl}" class="w-full h-24 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.onerror=null; this.src='${FALLBACK_IMAGE}';">
                         <h4 class="font-bold text-sm text-gray-800 line-clamp-1">${item.menu_name}</h4>
                         <p class="text-xs text-[#B80D0D] font-bold mt-1 whitespace-nowrap">${item.price || 0} ကျပ်</p>
                     </div>
@@ -256,7 +266,7 @@ function updateTotalWithDeli() {
     document.getElementById('totalAmount').innerText = (subTotal + deliFee).toLocaleString() + " ကျပ် (ခန့်မှန်း)";
 }
 
-// 🟢 Order တင်ခြင်း နှင့် Remark ပါ ပို့ဆောင်ခြင်း
+// Order တင်ခြင်း
 async function checkoutOrder() {
     playTapSound();
     const name = document.getElementById('custName').value.trim();
@@ -288,7 +298,7 @@ async function checkoutOrder() {
             customer_name: name,
             customer_phone: phone,
             customer_address: address,
-            customer_remark: remark, // 👈 ဆိုင်ဘက်သို့ ပို့မည့် Remark
+            customer_remark: remark,
             total_amount: subTotal + deliFee,
             shop_name: shopNamesStr,
             deli_name: selectedDeliNameText,
@@ -314,12 +324,10 @@ async function checkoutOrder() {
         let newOrderId = result.order_id || '---';
         localStorage.setItem('lastCustInfo', JSON.stringify({ name, phone, address, remark }));
 
-        // 🛒 Cart ရှင်းမည်
         cart = [];
         updateCartUI();
         document.getElementById('cartModal').classList.add('hidden');
 
-        // ✨ Success Receipt Popup ထဲသို့ Remark ပါ တခါတည်း ထည့်ပြမည်
         showSuccessReceiptPopup({
             order_id: newOrderId,
             customer_name: name,
@@ -343,7 +351,7 @@ async function checkoutOrder() {
     }
 }
 
-// 📸 Success Receipt Popup (Remark ပါဝင်သည်)
+// Success Receipt Popup
 function showSuccessReceiptPopup(orderData) {
     let receiptModal = document.getElementById('successReceiptModal');
     if (!receiptModal) {
