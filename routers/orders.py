@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Any
 from database import supabase
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
@@ -19,17 +19,21 @@ def get_all_orders():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 📌 အသစ်ထည့်သွင်းလိုက်သော Batch Orders Endpoint (Active orders များကို ID များဖြင့် ရယူရန်)
+# 📌 Batch Orders Endpoint (Error လုံးဝမတက်အောင် safe ဖြစ်အောင် လုပ်ထားသည်)
 @router.post("/batch")
-def get_batch_orders(payload: BatchOrderRequest):
+async def get_batch_orders(request: Request):
     try:
-        if not payload.order_ids:
+        body = await request.json()
+        order_ids = body.get("order_ids", [])
+        
+        if not order_ids:
             return []
-        response = supabase.table("orders").select("*").in_("order_id", payload.order_ids).execute()
+            
+        response = supabase.table("orders").select("*").in_("order_id", order_ids).execute()
         return response.data
     except Exception as e:
         print(f"Batch Orders Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        return []
 
 @router.post("")
 async def create_order(request: Request):
@@ -63,10 +67,9 @@ async def create_order(request: Request):
         if created_order and "order_id" in created_order and items:
             order_id = created_order["order_id"]
             for item in items:
-                # 400 Error မတက်စေရန် data များကို Safe ဖြစ်အောင် စစ်ဆေးခြင်း
                 menu_id = item.get("menu_id") or item.get("id")
                 if not menu_id:
-                    continue # menu_id မပါလျှင် ကျော်မည် (သို့မဟုတ် error ကင်းစေရန်)
+                    continue
 
                 item_payload = {
                     "order_id": order_id,
