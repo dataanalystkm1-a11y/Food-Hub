@@ -253,7 +253,7 @@ function updateTotalWithDeli() {
     document.getElementById('totalAmount').innerText = (subTotal + deliFee).toLocaleString() + " ကျပ်";
 }
 
-// Local History Order Fetching
+// Local History Order Fetching (Restricted to local device order IDs only)
 async function openOrdersModal() {
     playTapSound();
     const list = document.getElementById('myOrdersList');
@@ -401,7 +401,6 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('closeShopBtn').onclick = () => {
-        playTestSound(); // or playTapSound
         playTapSound();
         document.getElementById('shopModal').classList.add('hidden');
     };
