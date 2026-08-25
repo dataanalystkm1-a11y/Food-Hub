@@ -59,14 +59,14 @@ async def create_order(request: Request):
             "total_amount": body.get("total_price") or body.get("total_amount"),
             "shop_name": body.get("shop_name"),
             "deli_name": body.get("deli_name"),
-            "deli_id": deli_id,  # 👈 deli_id ထည့်သွင်းပေးခြင်း
+            "deli_id": deli_id,  # deli_id ထည့်သွင်းပေးခြင်း
             "menu_name": combined_menu_names,
             "order_status": "Pending"
         }
 
         response = supabase.table("orders").insert(order_payload).execute()
         
-        created_order = response.data[0] if response.data else None
+        created_order = response.data[0] if response.data else {}
         if created_order and "order_id" in created_order and items:
             order_id = created_order["order_id"]
             for item in items:
@@ -85,7 +85,13 @@ async def create_order(request: Request):
                 except Exception as sub_err:
                     print(f"Order Item Insert Error: {sub_err}")
 
-        return {"success": True, "message": "Order created successfully", "data": response.data}
+        # Frontend က order_id ကို လွယ်ကူစွာ ဖမ်းနိုင်ရန် order_id ထည့်ပေးလိုက်ပါပြီ
+        return {
+            "success": True, 
+            "message": "Order created successfully", 
+            "order_id": created_order.get("order_id"), 
+            "data": response.data
+        }
     except Exception as e:
         print(f"Insert Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
