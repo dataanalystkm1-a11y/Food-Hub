@@ -18,8 +18,8 @@ app.add_middleware(
 
 # --- Telegram Bot Configuration ---
 TELEGRAM_BOT_TOKEN = "8453664740:AAGiLC4MPpz7Ce_B2-UuZWHyK2TKA35Mj0Q"  # နွေးရဲ့ Bot Token ထည့်ရန်
-ADMIN_CHAT_ID = "7295294892"             # ဆိုင်ရှင် Chat ID ထည့်ရန်
-DELIVERY_CHAT_ID = "5921089974"       # Deli Team Chat ID ထည့်ရန်
+ADMIN_CHAT_ID = "5921089974"             # ဆိုင်ရှင် Chat ID ထည့်ရန်
+DELIVERY_CHAT_ID = "7295294892"       # Deli Team Chat ID ထည့်ရန်
 
 def send_telegram_notification(chat_id: str, message: str):
     if not TELEGRAM_BOT_TOKEN or chat_id == "YOUR_CHAT_ID":
