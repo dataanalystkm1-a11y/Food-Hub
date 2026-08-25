@@ -238,6 +238,7 @@ function openCartModal() {
     if (lastCust.name) document.getElementById('custName').value = lastCust.name;
     if (lastCust.phone) document.getElementById('custPhone').value = lastCust.phone;
     if (lastCust.address) document.getElementById('custAddress').value = lastCust.address;
+    if (lastCust.remark) document.getElementById('custRemark').value = lastCust.remark;
 
     document.getElementById('cartModal').classList.remove('hidden');
 }
@@ -252,22 +253,13 @@ function updateTotalWithDeli() {
     document.getElementById('totalAmount').innerText = (subTotal + deliFee).toLocaleString() + " ကျပ် (ခန့်မှန်း)";
 }
 
-// Order History / Tracking Button (အကယ်၍ နှိပ်လျှင် အသိပေးရန်)
-function openOrdersModal() {
-    playTapSound();
-    alert("Order တင်ပြီးပါက ပေါ်လာသည့် Receipt (Popup) ကို Screenshot ရိုက်သိမ်းထားနိုင်ပါသည်။ အသေးစိတ်ကို ဆိုင်မှ ဖုန်းဖြင့် ဆက်သွယ်အတည်ပြုပေးပါမည်ရှင်။");
-}
-
-function closeOrdersModal() {
-    // ဖြုတ်ထားပြီးသားဖြစ်၍ ဘာမှမလုပ်ပါ
-}
-
-// 🟢 Order တင်ခြင်း နှင့် Screenshot ရိုက်ရန် Success Popup ပြသခြင်း
+// 🟢 Order တင်ခြင်း နှင့် Remark ပါ ပို့ဆောင်ခြင်း
 async function checkoutOrder() {
     playTapSound();
     const name = document.getElementById('custName').value.trim();
     const phone = document.getElementById('custPhone').value.trim();
     const address = document.getElementById('custAddress').value.trim();
+    const remark = document.getElementById('custRemark') ? document.getElementById('custRemark').value.trim() : '';
     const deliSelect = document.getElementById('deliSelect');
     const deliId = deliSelect.value;
     const submitBtn = document.getElementById('submitOrderBtn');
@@ -293,6 +285,7 @@ async function checkoutOrder() {
             customer_name: name,
             customer_phone: phone,
             customer_address: address,
+            customer_remark: remark, // 👈 ဆိုင်ဘက်သို့ ပို့မည့် Remark
             total_amount: subTotal + deliFee,
             shop_name: shopNamesStr,
             deli_name: selectedDeliNameText,
@@ -316,19 +309,20 @@ async function checkoutOrder() {
         if (!response.ok) throw new Error(result.detail || "Order error");
 
         let newOrderId = result.order_id || '---';
-        localStorage.setItem('lastCustInfo', JSON.stringify({ name, phone, address }));
+        localStorage.setItem('lastCustInfo', JSON.stringify({ name, phone, address, remark }));
 
         // 🛒 Cart ရှင်းမည်
         cart = [];
         updateCartUI();
         document.getElementById('cartModal').classList.add('hidden');
 
-        // ✨ Screenshot ရိုက်ရန် Success Receipt Popup ကို ပြသမည်
+        // ✨ Success Receipt Popup ထဲသို့ Remark ပါ တခါတည်း ထည့်ပြမည်
         showSuccessReceiptPopup({
             order_id: newOrderId,
             customer_name: name,
             customer_phone: phone,
             customer_address: address,
+            customer_remark: remark,
             shop_name: shopNamesStr,
             menu_name: menuNamesStr,
             deli_name: selectedDeliNameText,
@@ -346,9 +340,8 @@ async function checkoutOrder() {
     }
 }
 
-// 📸 Success Receipt Popup ဖန်တီးပြသခြင်း
+// 📸 Success Receipt Popup (Remark ပါဝင်သည်)
 function showSuccessReceiptPopup(orderData) {
-    // ပုံမှန် Modal အဟောင်းရှိပြီးသားနေရာကို ဤ Receipt Modal ဖြင့် အစားထိုးပြသမည်
     let receiptModal = document.getElementById('successReceiptModal');
     if (!receiptModal) {
         receiptModal = document.createElement('div');
@@ -378,6 +371,11 @@ function showSuccessReceiptPopup(orderData) {
                     <span>လိပ်စာ:</span>
                     <span class="font-medium text-right max-w-[180px] line-clamp-2">${orderData.customer_address}</span>
                 </div>
+                ${orderData.customer_remark ? `
+                <div class="flex justify-between text-red-600 bg-red-50 p-1 rounded">
+                    <span class="font-semibold">မှတ်ချက်:</span>
+                    <span class="font-medium text-right max-w-[180px]">${orderData.customer_remark}</span>
+                </div>` : ''}
                 <div class="border-t pt-1.5">
                     <p class="text-gray-500 font-semibold">ဆိုင်: ${orderData.shop_name}</p>
                     <p class="font-medium text-gray-800">မီနူး: ${orderData.menu_name}</p>
@@ -449,8 +447,6 @@ window.addEventListener('DOMContentLoaded', () => {
         playTapSound();
         document.getElementById('shopModal').classList.add('hidden');
     };
-
-    document.getElementById('ordersBtn').onclick = openOrdersModal;
     
     document.addEventListener('contextmenu', event => event.preventDefault());
 });

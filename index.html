@@ -36,14 +36,9 @@
                 </div>
             </div>
 
-            <!-- Action Buttons -->
+            <!-- Action Buttons (Orders ခလုတ်ဖြုတ်ပြီး၊ မုန့်ခြင်းခလုတ်ကို ဘယ်ညာချိန်ညှိထားသည်) -->
             <div class="flex items-center gap-1.5">
-                <button id="ordersBtn" class="bg-red-950/40 hover:bg-red-900/60 text-white/90 px-2.5 py-1.5 rounded-full text-[11px] font-medium flex items-center gap-1 border border-red-400/30 backdrop-blur-sm">
-                    <span>📋</span>
-                    <span>အော်ဒါများ</span>
-                </button>
-
-                <button id="cartBtn" class="bg-[#FBBF24] hover:bg-amber-400 text-gray-900 px-3 py-1.5 rounded-full font-bold shadow-md text-xs flex items-center gap-1 transition-transform active:scale-95">
+                <button id="cartBtn" class="bg-[#FBBF24] hover:bg-amber-400 text-gray-900 px-3.5 py-1.5 rounded-full font-bold shadow-md text-xs flex items-center gap-1 transition-transform active:scale-95">
                     <span class="text-sm">🛒</span>
                     <span>မုန့်ခြင်း</span>
                     <span class="bg-[#B80D0D] text-white text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ml-0.5" id="cartCount">0</span>
@@ -111,6 +106,12 @@
                 <input type="text" id="custName" placeholder="အမည်" class="w-full text-sm border p-2 rounded-lg">
                 <input type="text" id="custPhone" placeholder="ဖုန်းနံပါတ်" class="w-full text-sm border p-2 rounded-lg">
                 <textarea id="custAddress" placeholder="လိပ်စာအပြည့်အစုံ" class="w-full text-sm border p-2 rounded-lg" rows="2"></textarea>
+                
+                <!-- 🌟 Remark / Note Input Box (နံနံပင်မထည့်ရန် စသည်ဖြင့် ရေးရန်) -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-600 mb-1">မှတ်ချက် (မထည့်လည်းရပါသည်)</label>
+                    <input type="text" id="custRemark" placeholder="ဥပမာ - နံနံပင်မထည့်ပါ၊ ငရုတ်သီးမထည့်ပါ" class="w-full text-sm border p-2 rounded-lg bg-white focus:outline-none focus:border-[#B80D0D]">
+                </div>
             </div>
 
             <div class="mb-4">
@@ -163,22 +164,6 @@
             <div id="shopMenuList" class="flex gap-3 overflow-x-auto pb-4 scroll-smooth snap-x"></div>
 
             <button id="closeShopBottomBtn" class="w-full bg-[#B80D0D] text-white py-2.5 rounded-xl text-sm font-semibold mt-2">ပိတ်ရန်</button>
-        </div>
-    </div>
-
-    <!-- Orders History Modal -->
-    <div id="ordersModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl p-5 shadow-xl max-h-[85vh] flex flex-col">
-            <div class="flex justify-between items-center mb-3 border-b pb-2">
-                <h2 class="text-lg font-bold text-gray-800">📋 ဤဖုန်းမှ မှာယူခဲ့သော အော်ဒါများ</h2>
-                <button id="closeOrdersBtn" class="text-gray-400 text-lg font-bold hover:text-gray-600">✕</button>
-            </div>
-
-            <div id="myOrdersList" class="flex-1 overflow-y-auto space-y-3 pr-1">
-                <p class="text-xs text-gray-500 text-center py-6">အော်ဒါမှတ်တမ်းများ ရယူနေပါသည်...</p>
-            </div>
-
-            <button id="closeOrdersBottomBtn" class="w-full bg-gray-200 text-gray-700 py-2 rounded-xl text-sm font-semibold mt-3">ပိတ်ရန်</button>
         </div>
     </div>
 
