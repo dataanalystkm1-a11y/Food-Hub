@@ -322,10 +322,7 @@ async function checkoutOrder() {
         const selectedOption = deliSelect.options[deliSelect.selectedIndex];
         let deliFee = Number(selectedOption.dataset.price || 0);
 
-        // ရွေးချယ်ထားသော Deli ရဲ့ နာမည်ကို ယူရန်
         const selectedDeliNameText = selectedOption ? selectedOption.text.split(' - ')[0] : '';
-
-        // မီနူးနာမည်များနှင့် ဆိုင်နာမည်များကို စုစည်းရန်
         const menuNamesStr = cart.map(item => item.menu_name).join(', ');
         const shopNamesStr = [...new Set(cart.map(item => item.shop_name))].join(', ');
 
@@ -334,9 +331,9 @@ async function checkoutOrder() {
             customer_phone: phone,
             customer_address: address,
             total_amount: subTotal + deliFee,
-            shop_name: shopNamesStr,         // 👈 ဆိုင်နာမည် ထည့်သွင်းခြင်း
-            deli_name: selectedDeliNameText, // 👈 Deli နာမည် ထည့်သွင်းခြင်း
-            menu_name: menuNamesStr,         // 👈 မီနူးနာမည်များ ထည့်သွင်းခြင်း
+            shop_name: shopNamesStr,
+            deli_name: selectedDeliNameText,
+            menu_name: menuNamesStr,
             deli_id: Number(deliId),
             order_status: 'Pending',
             items: cart.map(item => ({
@@ -404,6 +401,7 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('closeShopBtn').onclick = () => {
+        playTestSound(); // or playTapSound
         playTapSound();
         document.getElementById('shopModal').classList.add('hidden');
     };
