@@ -5,6 +5,9 @@ let allMenus = [];
 let allShops = [];
 let allDelis = [];
 
+// Local SVG Placeholder (အင်တာနက်မလို၊ Error လုံးဝမတက်ပါ)
+const FALLBACK_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
+
 // Tap Vibration
 function playTapSound() {
     if ("vibrate" in navigator) {
@@ -14,7 +17,7 @@ function playTapSound() {
 
 // Helpers
 function getDriveDirectUrl(url) {
-    if (!url) return 'https://via.placeholder.com/150';
+    if (!url || url.trim() === "") return FALLBACK_IMAGE;
     const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
     return match ? `https://lh3.googleusercontent.com/d/${match[1]}` : url;
 }
@@ -61,7 +64,7 @@ function renderMenus(menusToRender) {
                 <div draggable="true" ondragstart="dragStart(event, ${originalIndex})"
                      class="snap-start flex-shrink-0 w-40 bg-white p-3 rounded-xl shadow flex flex-col justify-between">
                     <div>
-                        <img src="${imageUrl}" class="w-full h-28 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='https://via.placeholder.com/150'">
+                        <img src="${imageUrl}" class="w-full h-28 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='${FALLBACK_IMAGE}'">
                         <h3 class="font-bold text-sm text-gray-800 line-clamp-1">${item.menu_name || 'မီနူးအမည်'}</h3>
                         <p class="text-xs text-[#B80D0D] font-medium mt-0.5 line-clamp-1">🏪 ${currentShopName}</p>
                     </div>
@@ -85,7 +88,7 @@ function renderShops(shopsToRender) {
             return `
                 <div class="snap-start flex-shrink-0 w-36 bg-white p-3 rounded-xl shadow text-center flex flex-col justify-between">
                     <div>
-                        <img src="${shopImageUrl}" class="w-full h-24 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='https://via.placeholder.com/150'">
+                        <img src="${shopImageUrl}" class="w-full h-24 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='${FALLBACK_IMAGE}'">
                         <h3 class="font-bold text-sm text-gray-800 line-clamp-1">${shop.shop_name || 'ဆိုင်နာမည်'}</h3>
                     </div>
                     <button onclick="openShopModal('${shop.shop_name}', ${shop.shop_id})" class="text-[#B80D0D] text-xs border border-[#B80D0D] px-3 py-1 rounded-full mt-2 hover:bg-red-50 font-medium">ကြည့်ရန်</button>
@@ -188,7 +191,7 @@ function openShopModal(shopName, shopId) {
             return `
                 <div class="snap-start flex-shrink-0 w-36 bg-gray-50 p-3 rounded-xl border border-gray-100 flex flex-col justify-between shadow-sm">
                     <div>
-                        <img src="${imgUrl}" class="w-full h-24 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='https://via.placeholder.com/150'">
+                        <img src="${imgUrl}" class="w-full h-24 object-cover rounded-lg mb-2 bg-gray-200" onerror="this.src='${FALLBACK_IMAGE}'">
                         <h4 class="font-bold text-sm text-gray-800 line-clamp-1">${item.menu_name}</h4>
                         <p class="text-xs text-[#B80D0D] font-bold mt-1 whitespace-nowrap">${item.price || 0} ကျပ်</p>
                     </div>
