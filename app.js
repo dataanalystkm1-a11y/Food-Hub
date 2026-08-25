@@ -1,7 +1,6 @@
 const API_BASE_URL = 'https://wati-backend-api.onrender.com';
 
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
-let myOrderIds = JSON.parse(localStorage.getItem('myOrderIds')) || []; // မိမိဖုန်းထဲရှိ Order IDs
 let allMenus = [];
 let allShops = [];
 let allDelis = [];
@@ -132,7 +131,7 @@ function clearSearch() {
     renderShops(allShops);
 }
 
-// Data Fetching (Shops, Menus & Delis from Render Backend)
+// Data Fetching
 async function loadDashboardData() {
     try {
         const [shopsRes, menusRes, deliRes] = await Promise.all([
@@ -156,14 +155,14 @@ async function loadDashboardData() {
                 <div class="snap-start flex-shrink-0 w-44 bg-white p-3 rounded-xl shadow flex items-center justify-between">
                     <div>
                         <h4 class="font-bold text-sm text-gray-800 line-clamp-1">${deli.deli_name || 'Delivery'}</h4>
-                        <p class="text-xs text-gray-500 mt-0.5">${deli.fees || deli.price || 0} ကျပ်</p>
+                        <p class="text-xs text-gray-500 mt-0.5">မြို့တွင်း: ${deli.fees || deli.price || 0} ကျပ်</p>
                     </div>
                     <span class="text-xs bg-red-100 text-[#B80D0D] px-2 py-1 rounded-md font-semibold whitespace-nowrap">Active</span>
                 </div>
             `).join('');
 
             deliSelect.innerHTML = `<option value="">Deli ရွေးပါ</option>` + allDelis.map(deli => `
-                <option value="${deli.deli_id}" data-price="${deli.fees || deli.price || 0}">${deli.deli_name} - ${deli.fees || deli.price || 0} ကျပ်</option>
+                <option value="${deli.deli_id}" data-price="${deli.fees || deli.price || 0}">${deli.deli_name} (မြို့တွင်း - ${deli.fees || deli.price || 0} ကျပ်)</option>
             `).join('');
         } else {
             deliContainer.innerHTML = `<p class="text-gray-500 text-sm col-span-2 text-center py-4">Deli မရှိသေးပါ။</p>`;
@@ -249,68 +248,21 @@ function updateTotalWithDeli() {
     const selectedOption = deliSelect.options[deliSelect.selectedIndex];
     let deliFee = selectedOption && selectedOption.dataset.price ? Number(selectedOption.dataset.price) : 0;
 
-    document.getElementById('deliFeeAmount').innerText = deliFee.toLocaleString() + " ကျပ်";
-    document.getElementById('totalAmount').innerText = (subTotal + deliFee).toLocaleString() + " ကျပ်";
+    document.getElementById('deliFeeAmount').innerText = deliFee.toLocaleString() + " ကျပ် (မြို့တွင်း)";
+    document.getElementById('totalAmount').innerText = (subTotal + deliFee).toLocaleString() + " ကျပ် (ခန့်မှန်း)";
 }
 
-// Active & Real-time Order Tracking
-async function openOrdersModal() {
+// Order History / Tracking Button (အကယ်၍ နှိပ်လျှင် အသိပေးရန်)
+function openOrdersModal() {
     playTapSound();
-    const list = document.getElementById('myOrdersList');
-    document.getElementById('ordersModal').classList.remove('hidden');
-
-    if (myOrderIds.length === 0) {
-        list.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">ဤဖုန်းမှ မှာယူထားသော အော်ဒါမှတ်တမ်း မရှိသေးပါ။</p>`;
-        return;
-    }
-
-    list.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">အော်ဒါမှတ်တမ်းများ ရယူနေပါသည်...</p>`;
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/orders/batch`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ order_ids: myOrderIds })
-        });
-        const data = await response.json();
-
-        const activeOrders = (data || []).filter(o => 
-            (o.order_status || 'Pending').toLowerCase() !== 'completed'
-        );
-
-        if (activeOrders.length > 0) {
-            list.innerHTML = activeOrders.map(o => {
-                const status = o.order_status || 'Pending';
-                let statusBadgeClass = 'bg-yellow-100 text-yellow-800';
-                if (status.toLowerCase() === 'confirmed') statusBadgeClass = 'bg-blue-100 text-blue-800';
-                else if (status.toLowerCase() === 'delivering') statusBadgeClass = 'bg-purple-100 text-purple-800';
-
-                return `
-                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
-                        <div class="flex justify-between items-center mb-1">
-                            <span class="font-bold text-sm text-gray-800">Order #${o.order_id}</span>
-                            <span class="text-xs px-2 py-0.5 rounded-full font-bold ${statusBadgeClass}">${status}</span>
-                        </div>
-                        <div class="text-xs text-gray-600 space-y-0.5">
-                            <p>👤 ${o.customer_name} (${o.customer_phone})</p>
-                            <p>📍 ${o.customer_address}</p>
-                            ${o.shop_name ? `<p>🏪 ဆိုင်: ${o.shop_name}</p>` : ''}
-                            ${o.menu_name ? `<p>🍲 မီနူး: ${o.menu_name}</p>` : ''}
-                            ${o.deli_name ? `<p>🛵 Deli: ${o.deli_name}</p>` : ''}
-                            <p class="font-bold text-[#B80D0D] mt-1">ကျသင့်ငွေ: ${Number(o.total_amount || 0).toLocaleString()} ကျပ်</p>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        } else {
-            list.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">လက်ရှိ လုပ်ဆောင်ဆဲ အော်ဒါမှတ်တမ်းများ မရှိပါ။</p>`;
-        }
-    } catch (err) {
-        console.error("Order fetch error:", err);
-        list.innerHTML = `<p class="text-xs text-red-500 text-center py-6">အော်ဒါများ ရယူရာတွင် အမှားအယွင်း ဖြစ်ပေါ်ခဲ့ပါသည်။</p>`;
-    }
+    alert("Order တင်ပြီးပါက ပေါ်လာသည့် Receipt (Popup) ကို Screenshot ရိုက်သိမ်းထားနိုင်ပါသည်။ အသေးစိတ်ကို ဆိုင်မှ ဖုန်းဖြင့် ဆက်သွယ်အတည်ပြုပေးပါမည်ရှင်။");
 }
 
+function closeOrdersModal() {
+    // ဖြုတ်ထားပြီးသားဖြစ်၍ ဘာမှမလုပ်ပါ
+}
+
+// 🟢 Order တင်ခြင်း နှင့် Screenshot ရိုက်ရန် Success Popup ပြသခြင်း
 async function checkoutOrder() {
     playTapSound();
     const name = document.getElementById('custName').value.trim();
@@ -333,7 +285,7 @@ async function checkoutOrder() {
         const selectedOption = deliSelect.options[deliSelect.selectedIndex];
         let deliFee = Number(selectedOption.dataset.price || 0);
 
-        const selectedDeliNameText = selectedOption ? selectedOption.text.split(' - ')[0] : '';
+        const selectedDeliNameText = selectedOption ? selectedOption.text.split(' (')[0] : '';
         const menuNamesStr = cart.map(item => item.menu_name).join(', ');
         const shopNamesStr = [...new Set(cart.map(item => item.shop_name))].join(', ');
 
@@ -363,26 +315,27 @@ async function checkoutOrder() {
         const result = await response.json();
         if (!response.ok) throw new Error(result.detail || "Order error");
 
-        // 🛠️ order_id ကို ပိုမိုသေချာစွာ ဆွဲထုတ်ခြင်း (Backend က ပုံစံအမျိုးမျိုးနဲ့ ပြန်လာနိုင်တာမို့ အားလုံးကို ခြုံမိစေရန်)
-        let newOrderId = null;
-        if (result.order_id) {
-            newOrderId = result.order_id;
-        } else if (result.data && Array.isArray(result.data) && result.data.length > 0) {
-            newOrderId = result.data[0].order_id || result.data[0].id;
-        }
-
-        if (newOrderId) {
-            if (!myOrderIds.includes(newOrderId)) {
-                myOrderIds.push(newOrderId);
-                localStorage.setItem('myOrderIds', JSON.stringify(myOrderIds));
-            }
-        }
+        let newOrderId = result.order_id || '---';
         localStorage.setItem('lastCustInfo', JSON.stringify({ name, phone, address }));
 
-        alert(`Order တင်ခြင်း အောင်မြင်ပါသည်။ ကျေးဇူးတင်ပါတယ်ရှင်!`);
+        // 🛒 Cart ရှင်းမည်
         cart = [];
         updateCartUI();
         document.getElementById('cartModal').classList.add('hidden');
+
+        // ✨ Screenshot ရိုက်ရန် Success Receipt Popup ကို ပြသမည်
+        showSuccessReceiptPopup({
+            order_id: newOrderId,
+            customer_name: name,
+            customer_phone: phone,
+            customer_address: address,
+            shop_name: shopNamesStr,
+            menu_name: menuNamesStr,
+            deli_name: selectedDeliNameText,
+            sub_total: subTotal,
+            deli_fee: deliFee,
+            total_amount: subTotal + deliFee
+        });
 
     } catch (err) {
         console.error("Order Error:", err);
@@ -390,6 +343,75 @@ async function checkoutOrder() {
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerText = "Order တင်မည် (COD)";
+    }
+}
+
+// 📸 Success Receipt Popup ဖန်တီးပြသခြင်း
+function showSuccessReceiptPopup(orderData) {
+    // ပုံမှန် Modal အဟောင်းရှိပြီးသားနေရာကို ဤ Receipt Modal ဖြင့် အစားထိုးပြသမည်
+    let receiptModal = document.getElementById('successReceiptModal');
+    if (!receiptModal) {
+        receiptModal = document.createElement('div');
+        receiptModal.id = 'successReceiptModal';
+        receiptModal.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4';
+        document.body.appendChild(receiptModal);
+    }
+
+    receiptModal.innerHTML = `
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative border-t-4 border-[#B80D0D]">
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 bg-red-100 text-[#B80D0D] rounded-full flex items-center justify-center mx-auto mb-2 text-2xl font-bold">✓</div>
+                <h3 class="text-lg font-bold text-gray-800">Order တင်ခြင်း အောင်မြင်ပါသည်။</h3>
+                <p class="text-xs text-gray-500 mt-1">ကျေးဇူးတင်ပါတယ်ရှင်။ ဤအချက်အလက်များကို Screenshot ရိုက်သိမ်းထားပေးပါရန် မေတ္တာရပ်ခံအပ်ပါသည်။</p>
+            </div>
+
+            <div class="bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300 text-xs text-gray-700 space-y-1.5 mb-4">
+                <div class="flex justify-between font-bold text-[#B80D0D]">
+                    <span>Order ID:</span>
+                    <span>#${orderData.order_id}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>အမည်:</span>
+                    <span class="font-medium">${orderData.customer_name} (${orderData.customer_phone})</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>လိပ်စာ:</span>
+                    <span class="font-medium text-right max-w-[180px] line-clamp-2">${orderData.customer_address}</span>
+                </div>
+                <div class="border-t pt-1.5">
+                    <p class="text-gray-500 font-semibold">ဆိုင်: ${orderData.shop_name}</p>
+                    <p class="font-medium text-gray-800">မီနူး: ${orderData.menu_name}</p>
+                </div>
+                <div class="border-t pt-1.5 space-y-1">
+                    <div class="flex justify-between">
+                        <span>မုန့်ဖိုး စုစုပေါင်း:</span>
+                        <span>${orderData.sub_total.toLocaleString()} ကျပ်</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Deli ခ (${orderData.deli_name}):</span>
+                        <span>${orderData.deli_fee.toLocaleString()} ကျပ် <span class="text-[10px] text-gray-500">(မြို့တွင်း)</span></span>
+                    </div>
+                    <p class="text-[10px] text-[#B80D0D] italic mt-0.5">* မြို့ပြင်/ရပ်ကွက်အဝေးပိုင်းဖြစ်ပါက Deli ခ ထပ်မံပြောင်းလဲနိုင်ပြီး ဆိုင်မှ ဖုန်းဖြင့် အတည်ပြုပါမည်။</p>
+                    <div class="flex justify-between font-bold text-sm text-[#B80D0D] border-t pt-1">
+                        <span>ကျသင့်ငွေ (ခန့်မှန်း):</span>
+                        <span>${orderData.total_amount.toLocaleString()} ကျပ်</span>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="closeSuccessReceipt()" class="w-full bg-[#B80D0D] text-white py-2.5 rounded-xl font-bold text-sm hover:bg-red-700 transition">
+                သိရှိပြီးပါပြီ (ပိတ်မည်)
+            </button>
+        </div>
+    `;
+    receiptModal.classList.remove('hidden');
+}
+
+function closeSuccessReceipt() {
+    playTapSound();
+    const receiptModal = document.getElementById('successReceiptModal');
+    if (receiptModal) {
+        receiptModal.classList.add('hidden');
     }
 }
 
@@ -429,14 +451,6 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 
     document.getElementById('ordersBtn').onclick = openOrdersModal;
-    document.getElementById('closeOrdersBtn').onclick = () => {
-        playTapSound();
-        document.getElementById('ordersModal').classList.add('hidden');
-    };
-    document.getElementById('closeOrdersBottomBtn').onclick = () => {
-        playTapSound();
-        document.getElementById('ordersModal').classList.add('hidden');
-    };
-
+    
     document.addEventListener('contextmenu', event => event.preventDefault());
 });
