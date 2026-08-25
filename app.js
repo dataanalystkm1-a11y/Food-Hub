@@ -253,7 +253,7 @@ function updateTotalWithDeli() {
     document.getElementById('totalAmount').innerText = (subTotal + deliFee).toLocaleString() + " ကျပ်";
 }
 
-// Local History Order Fetching (Restricted to local device order IDs only)
+// Active & Real-time Order Tracking (Completed orders ကို ဖယ်ထုတ်ပြီး ရှင်သန်ဆဲ အော်ဒါများကိုသာ ပြသခြင်း)
 async function openOrdersModal() {
     playTapSound();
     const list = document.getElementById('myOrdersList');
@@ -274,25 +274,37 @@ async function openOrdersModal() {
         });
         const data = await response.json();
 
-        if (data && data.length > 0) {
-            list.innerHTML = data.map(o => `
-                <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="font-bold text-sm text-gray-800">Order #${o.order_id}</span>
-                        <span class="text-xs px-2 py-0.5 rounded-full font-bold ${o.order_status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">${o.order_status || 'Pending'}</span>
+        // completed မဖြစ်သေးသော Active orders များကိုသာ စစ်ထုတ်မည်
+        const activeOrders = (data || []).filter(o => 
+            (o.order_status || 'Pending').toLowerCase() !== 'completed'
+        );
+
+        if (activeOrders.length > 0) {
+            list.innerHTML = activeOrders.map(o => {
+                const status = o.order_status || 'Pending';
+                let statusBadgeClass = 'bg-yellow-100 text-yellow-800';
+                if (status.toLowerCase() === 'confirmed') statusBadgeClass = 'bg-blue-100 text-blue-800';
+                else if (status.toLowerCase() === 'delivering') statusBadgeClass = 'bg-purple-100 text-purple-800';
+
+                return `
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-sm text-gray-800">Order #${o.order_id}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full font-bold ${statusBadgeClass}">${status}</span>
+                        </div>
+                        <div class="text-xs text-gray-600 space-y-0.5">
+                            <p>👤 ${o.customer_name} (${o.customer_phone})</p>
+                            <p>📍 ${o.customer_address}</p>
+                            ${o.shop_name ? `<p>🏪 ဆိုင်: ${o.shop_name}</p>` : ''}
+                            ${o.menu_name ? `<p>🍲 မီနူး: ${o.menu_name}</p>` : ''}
+                            ${o.deli_name ? `<p>🛵 Deli: ${o.deli_name}</p>` : ''}
+                            <p class="font-bold text-[#B80D0D] mt-1">ကျသင့်ငွေ: ${Number(o.total_amount || 0).toLocaleString()} ကျပ်</p>
+                        </div>
                     </div>
-                    <div class="text-xs text-gray-600 space-y-0.5">
-                        <p>👤 ${o.customer_name} (${o.customer_phone})</p>
-                        <p>📍 ${o.customer_address}</p>
-                        ${o.shop_name ? `<p>🏪 ဆိုင်: ${o.shop_name}</p>` : ''}
-                        ${o.menu_name ? `<p>🍲 မီနူး: ${o.menu_name}</p>` : ''}
-                        ${o.deli_name ? `<p>🛵 Deli: ${o.deli_name}</p>` : ''}
-                        <p class="font-bold text-[#B80D0D] mt-1">ကျသင့်ငွေ: ${Number(o.total_amount || 0).toLocaleString()} ကျပ်</p>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         } else {
-            list.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">အော်ဒါမှတ်တမ်းများ မတွေ့ရှိပါ။</p>`;
+            list.innerHTML = `<p class="text-xs text-gray-500 text-center py-6">လက်ရှိ လုပ်ဆောင်ဆဲ အော်ဒါမှတ်တမ်းများ မရှိပါ။</p>`;
         }
     } catch (err) {
         console.error("Order fetch error:", err);
