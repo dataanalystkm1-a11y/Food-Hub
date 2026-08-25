@@ -20,11 +20,11 @@ def send_telegram_notification(chat_id: str, message: str):
     payload = {
         "chat_id": chat_id,
         "text": message
-        # parse_mode ကို ခဏဖြုတ်ထားပြီး Plain text အနေနဲ့ ပို့ပေးမည် (Formatting error ကင်းစေရန်)
+        # Plain text အနေနဲ့ ပို့ပေးမည် (Formatting error ကင်းစေရန်)
     }
     try:
         response = requests.post(url, json=payload)
-        print(f"Telegram Response for {chat_id}:", response.text)  # Terminal ထဲမှာ အောင်မြင်/မအောင်မြင် စစ်ဆေးရန်
+        print(f"Telegram Response for {chat_id}:", response.text)
     except Exception as e:
         print(f"Telegram Notification Error: {e}")
 
@@ -90,7 +90,7 @@ async def create_order(request: Request):
             "total_amount": total_price,
             "shop_name": shop_name,
             "deli_name": deli_name,
-            "deli_id": deli_id,  # deli_id ထည့်သွင်းပေးခြင်း
+            "deli_id": deli_id,
             "menu_name": combined_menu_names,
             "order_status": "Pending"
         }
@@ -117,19 +117,23 @@ async def create_order(request: Request):
                 except Exception as sub_err:
                     print(f"Order Item Insert Error: {sub_err}")
 
-        # 🔔 Telegram Notifications ပို့ခြင်း (ဆိုင်ဘက်နှင့် Deli ဘက် သီးသန့်စီ)
+        # --- ဆိုင်အတွက် မီနူးတန်ဖိုး စုစုပေါင်း တွက်ချက်ခြင်း (Deli ခ မပါ) ---
+        menu_total = sum(float(item.get("price", 0)) * int(item.get("quantity", 1)) for item in items) if items else float(total_price or 0)
+
+        # 🔔 Telegram Notifications ပို့ခြင်း
         
-        # 1. ဆိုင်ရှင် (Admin) ဘက်သို့ (Customer ဖုန်းနံပါတ်နှင့် လိပ်စာ မပါဝင်ပါ)
+        # 1. ဆိုင်ရှင် (Admin) ဘက်သို့ (Customer နာမည်ပါမည်၊ ဖုန်း/လိပ်စာမပါ၊ Deli ခမပါဘဲ မီနူး Total သီးသန့်ပါမည်)
         admin_msg = (
             f"[Order အသစ်ဝင်ရောက်ပါသည်! #ID: {order_id}]\n\n"
+            f"👤 ဝယ်ယူသူ: {cust_name}\n"
             f"ဆိုင်: {shop_name}\n"
             f"မီနူး: {combined_menu_names}\n"
-            f"ကျသင့်ငွေ: {float(total_price or 0):,.0f} ကျပ်\n"
+            f"ကျသင့်ငွေ (မီနူးစုစုပေါင်း): {menu_total:,.0f} ကျပ်\n"
             f"ရွေးချယ်ထားသော Deli: {deli_name}"
         )
         send_telegram_notification(ADMIN_CHAT_ID, admin_msg)
 
-        # 2. Delivery ဘက်သို့ (Customer အချက်အလက် အပြည့်အစုံပါဝင်သည်)
+        # 2. Delivery ဘက်သို့ (Customer အချက်အလက် အပြည့်အစုံနှင့် ကျသင့်ငွေအစုံပါဝင်သည်)
         deli_msg = (
             f"[Delivery ပို့ရန် Order အသစ်! #ID: {order_id}]\n\n"
             f"ဝယ်ယူသူ: {cust_name}\n"
@@ -142,7 +146,6 @@ async def create_order(request: Request):
         )
         send_telegram_notification(DELIVERY_CHAT_ID, deli_msg)
 
-        # Frontend က order_id ကို လွယ်ကူစွာ ဖမ်းနိုင်ရန် order_id ထည့်ပေးလိုက်ပါပြီ
         return {
             "success": True, 
             "message": "Order created successfully", 
