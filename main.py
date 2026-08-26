@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 from database import supabase
-from routers import orders, menus
+from routers import orders, menus, shops_portal  # <--- ၁။ ဒီမှာ ပါရပါမယ်
 
 app = FastAPI(title="WATI Food Hub API")
 
@@ -17,13 +17,13 @@ app.add_middleware(
 )
 
 # --- Telegram Bot Configuration ---
-TELEGRAM_BOT_TOKEN = "8453664740:AAGiLC4MPpz7Ce_B2-UuZWHyK2TKA35Mj0Q"  # နွေးရဲ့ Bot Token ထည့်ရန်
-ADMIN_CHAT_ID = "5921089974"             # ဆိုင်ရှင် Chat ID ထည့်ရန်
-DELIVERY_CHAT_ID = "7295294892"       # Deli Team Chat ID ထည့်ရန်
+TELEGRAM_BOT_TOKEN = "8453664740:AAGiLC4MPpz7Ce_B2-UuZWHyK2TKA35Mj0Q"
+ADMIN_CHAT_ID = "5921089974"
+DELIVERY_CHAT_ID = "7295294892"
 
 def send_telegram_notification(chat_id: str, message: str):
     if not TELEGRAM_BOT_TOKEN or chat_id == "YOUR_CHAT_ID":
-        return  # Token မရှိသေးရင် Error မတက်အောင် ကျော်သွားမည်
+        return
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id": chat_id,
@@ -38,6 +38,7 @@ def send_telegram_notification(chat_id: str, message: str):
 # Routers များကို ချိတ်ဆက်ခြင်း
 app.include_router(orders.router)
 app.include_router(menus.router)
+app.include_router(shops_portal.router)  # <--- ၂။ ဒီမှာ ထည့်ပေးရပါမယ်
 
 # Shops API Endpoint
 @app.get("/shops")
