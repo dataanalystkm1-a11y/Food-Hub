@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WATI - Shop Owner Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <div class="container mx-auto p-4 max-w-4xl">
+        <!-- Header -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">ဆိုင်ပိုင်ရှင် စီမံခန့်ခွဲမှု ပန်နယ်</h1>
+                <p class="text-sm text-gray-500">အော်ဒာများကို စစ်ဆေးခြင်းနှင့် မီနူးများပြင်ဆင်ခြင်း</p>
+            </div>
+            <div id="shop-info" class="text-right">
+                <span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">Active Shop</span>
+            </div>
+        </div>
+
+        <!-- Section 1: Incoming Orders -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">ဝင်လာသော အော်ဒာများ (Incoming Orders)</h2>
+            <div id="orders-list" class="space-y-4">
+                <!-- Orders များကို JavaScript ဖြင့် ဤနေရာတွင် ထည့်သွင်းမည် -->
+                <p class="text-gray-500 text-sm">အော်ဒာများကို ရှာဖွေနေပါသည်...</p>
+            </div>
+        </div>
+
+        <!-- Section 2: Menu Management (Add & Update) -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">မီနူးစာရင်း စီမံရန်</h2>
+            
+            <!-- Add New Menu Form -->
+            <div class="bg-gray-50 p-4 rounded-md mb-6 border">
+                <h3 class="text-md font-medium mb-3 text-gray-700">မီနူးအသစ် ထည့်ရန်</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <input type="text" id="new-menu-name" placeholder="မီနူးအမည်" class="border p-2 rounded text-sm">
+                    <input type="number" id="new-menu-price" placeholder="ဈေးနှုန်း (ကျပ်)" class="border p-2 rounded text-sm">
+                    <button onclick="addNewMenu()" class="bg-blue-600 text-white p-2 rounded text-sm font-semibold hover:bg-blue-700">မီနူးအသစ် ထည့်မည်</button>
+                </div>
+            </div>
+
+            <!-- Existing Menus List -->
+            <div id="menu-list" class="space-y-3">
+                <!-- Existing menus will load here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for API Integration -->
+    <script>
+        const API_BASE_URL = window.location.origin; // Render backend URL
+        const shopId = 1; // ဥပမာ - လက်ရှိ ဆိုင် ID (Login ဝင်ထားသောဆိုင်)
+
+        // 1. ဆိုင်၏ မီနူးများကို ဆွဲထုတ်ရန်
+        async function fetchMenus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/shop-portal/menu/${shopId}`);
+                const result = await response.json();
+                const menuList = document.getElementById('menu-list');
+                
+                if(result.success && result.data.length > 0) {
+                    menuList.innerHTML = result.data.map(item => `
+                        flex justify-between items-center bg-gray-50 p-3 rounded border">
+                            <div>
+                                <span class="font-medium text-gray-800">${item.menu_name}</span>
+                                <span class="text-gray-500 text-sm ml-2">${item.price} ကျပ်</span>
+                            </div>
+                            <div class="space-x-2">
+                                <input type="number" id="price-${item.menu_id}" placeholder="ဈေးနှုန်းအသစ်" class="border p-1 rounded text-xs w-24">
+                                <button onclick="updatePrice(${item.menu_id})" class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">ဈေးပြောင်းမည်</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    menuList.innerHTML = `<p class="text-gray-500 text-sm">မီနူး မရှိသေးပါ။</p>`;
+                }
+            } catch (error) {
+                console.error("Error fetching menus:", error);
+            }
+        }
+
+        // 2. မီနူးအသစ် ထည့်သွင်းခြင်း
+        async function addNewMenu() {
+            const name = document.getElementById('new-menu-name').value;
+            const price = document.getElementById('new-menu-price').value;
+
+            if(!name || !price) {
+                alert("ကျေးဇူးပြု၍ မီနူးအမည်နှင့် ဈေးနှုန်းကို ဖြည့်ပါ");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/shop-portal/menu`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ shop_id: shopId, menu_name: name, price: parseFloat(price) })
+                });
+                const result = await response.json();
+                if(result.success) {
+                    alert("မီနူးအသစ် ထည့်ပြီးပါပြီ!");
+                    document.getElementById('new-menu-name').value = '';
+                    document.getElementById('new-menu-price').value = '';
+                    fetchMenus();
+                }
+            } catch (error) {
+                console.error("Error adding menu:", error);
+            }
+        }
+
+        // 3. ဈေးနှုန်း အသစ်ပြင်ဆင်ခြင်း
+        async function updatePrice(menuId) {
+            const newPrice = document.getElementById(`price-${menuId}`).value;
+            if(!newPrice) {
+                alert("ကျေးဇူးပြု၍ ပြောင်းလဲမည့် ဈေးနှုန်းကို ရိုက်ထည့်ပါ");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/shop-portal/menu/${menuId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ price: parseFloat(newPrice) })
+                });
+                const result = await response.json();
+                if(result.success) {
+                    alert("ဈေးနှုန်း အောင်မြင်စွာ ပြောင်းလဲပြီးပါပြီ!");
+                    fetchMenus();
+                }
+            } catch (error) {
+                console.error("Error updating price:", error);
+            }
+        }
+
+        // Page စတင်ဖွင့်ချိန်တွင် မီနူးများ ဆွဲထုတ်ရန်
+        window.onload = () => {
+            fetchMenus();
+        };
+    </script>
+</body>
+</html>
