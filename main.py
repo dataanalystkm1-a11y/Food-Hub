@@ -1,6 +1,6 @@
 import os
 import requests
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
@@ -41,6 +41,45 @@ def send_telegram_notification(chat_id: str, message: str):
 app.include_router(orders.router)
 app.include_router(menus.router)
 app.include_router(shops_portal.router)  # <--- ၂။ ထည့်ပေးရပါမယ်
+
+# --- Telegram Webhook (ဆိုင်ရှင်က Confirm ခလုတ်နှိပ်သည့်အခါ လုပ်ဆောင်ရန်) ---
+@app.post("/telegram-webhook")
+async def telegram_webhook(req: Request):
+    try:
+        data = await req.json()
+        
+        if "callback_query" in data:
+            callback = data["callback_query"]
+            callback_data = callback["data"]  # ဥပမာ - "confirm_15"
+            chat_id = callback["message"]["chat"]["id"]
+            
+            action, order_id = callback_data.split("_")
+            order_id = int(order_id)
+            
+            if action == "confirm":
+                new_status = "Accepted"
+                reply_text = f"✅ အော်ဒာ #{order_id} ကို အတည်ပြုပြီးပါပြီ။"
+                
+                # Supabase Database ထဲတွင် Order Status ကို Accepted သို့ ပြောင်းရန်
+                supabase.table("orders").update({"order_status": new_status}).eq("order_id", order_id).execute()
+                
+                # Telegram ဆီသို့ အကြောင်းပြန်စာ ပို့ရန်
+                answer_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/answerCallbackQuery"
+                requests.post(answer_url, json={"callback_query_id": callback["id"], "text": reply_text})
+                
+                # မူလ မက်ဆေ့ချ်ကို အတည်ပြုပြီးကြောင်း ပုံစံပြောင်းရန်
+                edit_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/editMessageText"
+                requests.post(edit_url, json={
+                    "chat_id": chat_id,
+                    "message_id": callback["message"]["message_id"],
+                    "text": callback["message"]["text"] + f"\n\n*Status: Order အတည်ပြုပြီးပါပြီ ✅*",
+                    "parse_mode": "Markdown"
+                })
+        
+        return {"ok": True}
+    except Exception as e:
+        print(f"Webhook Error: {e}")
+        return {"ok": False, "error": str(e)}
 
 # --- Shop Dashboard UI ကို Render လုပ်ရန် ---
 @app.get("/shop-dashboard", response_class=HTMLResponse)

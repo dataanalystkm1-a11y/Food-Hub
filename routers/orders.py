@@ -10,19 +10,45 @@ router = APIRouter(prefix="/orders", tags=["Orders"])
 TELEGRAM_BOT_TOKEN = "8453664740:AAGiLC4MPpz7Ce_B2-UuZWHyK2TKA35Mj0Q"  # နွေးရဲ့ Bot Token
 DELIVERY_CHAT_ID = "7295294892"          # Deli Team Chat ID
 
-def send_telegram_notification(chat_id: str, message: str):
+def send_telegram_notification_with_button(chat_id: str, message: str, order_id: int):
     if not TELEGRAM_BOT_TOKEN or not chat_id:
         print(f"Telegram Warning: Token or Chat ID is missing. (chat_id: {chat_id})")
         return
     
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    
+    # Confirm ခလုတ် တစ်ခုတည်းသာ ပါဝင်သော Inline Keyboard
+    keyboard = {
+        "inline_keyboard": [
+            [
+                {"text": "✅ Order အတည်ပြုပါသည်", "callback_data": f"confirm_{order_id}"}
+            ]
+        ]
+    }
+
     payload = {
         "chat_id": chat_id,
-        "text": message
+        "text": message,
+        "parse_mode": "Markdown",
+        "reply_markup": keyboard
     }
     try:
         response = requests.post(url, json=payload)
         print(f"Telegram Response for Chat ID {chat_id}:", response.text)
+    except Exception as e:
+        print(f"Telegram Notification Error: {e}")
+
+def send_telegram_notification(chat_id: str, message: str):
+    if not TELEGRAM_BOT_TOKEN or not chat_id:
+        return
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": message,
+        "parse_mode": "Markdown"
+    }
+    try:
+        requests.post(url, json=payload)
     except Exception as e:
         print(f"Telegram Notification Error: {e}")
 
@@ -157,7 +183,7 @@ async def create_order(request: Request):
 
         print("Final shop_items_map:", shop_items_map)
 
-        # 🔔 1. ဆိုင်တစ်ဆိုင်ချင်းစီဆီသို့ သီးသန့် Chat ID ဖြင့် မက်ဆေ့ချ်ပို့ခြင်း
+        # 🔔 1. ဆိုင်တစ်ဆိုင်ချင်းစီဆီသို့ Button ပါသော Telegram မက်ဆေ့ချ်ပို့ခြင်း
         if shop_items_map:
             for s_id, s_data in shop_items_map.items():
                 s_chat_id = s_data.get("chat_id")
@@ -174,43 +200,46 @@ async def create_order(request: Request):
                 shop_menu_text = "\n".join(menu_lines) if menu_lines else combined_menu_names
 
                 shop_msg = (
-                    f"[Order အသစ်ဝင်ရောက်ပါသည်! #ID: {order_id}]\n\n"
+                    f"📦 *[Order အသစ်ဝင်ရောက်ပါသည်!]*\n"
+                    f"🆔 အော်ဒာ ID: #{order_id}\n\n"
                     f"👤 ဝယ်ယူသူ: {cust_name}\n"
                     f"ဆိုင်: {s_n}\n"
                     f"မီနူးများ:\n{shop_menu_text}\n\n"
-                    f"ကျသင့်ငွေ (မီနူးစုစုပေါင်း): {shop_menu_total:,.0f} ကျပ်\n"
-                    f"ရွေးချယ်ထားသော Deli: {deli_name}"
+                    f"💰 ကျသင့်ငွေ (မီနူးစုစုပေါင်း): {shop_menu_total:,.0f} ကျပ်\n"
+                    f"🛵 ရွေးချယ်ထားသော Deli: {deli_name}"
                 )
 
                 if s_chat_id:
                     print(f"Sending Telegram to Shop '{s_n}' with Chat ID: {s_chat_id}")
-                    send_telegram_notification(str(s_chat_id), shop_msg)
+                    send_telegram_notification_with_button(str(s_chat_id), shop_msg, order_id)
                 else:
                     print(f"⚠️ Shop '{s_n}' has NO Chat ID configured in database! Sending to admin fallback instead.")
-                    send_telegram_notification("5921089974", f"(Admin Fallback for {s_n})\n\n" + shop_msg)
+                    send_telegram_notification_with_button("5921089974", f"(Admin Fallback for {s_n})\n\n" + shop_msg, order_id)
         else:
             print("⚠️ shop_items_map is empty! Using fallback message.")
             menu_total = sum(float(item.get("price", 0)) * int(item.get("quantity", 1)) for item in items) if items else float(total_price or 0)
             fallback_admin_msg = (
-                f"[Order အသစ်ဝင်ရောက်ပါသည်! #ID: {order_id}]\n\n"
+                f"📦 *[Order အသစ်ဝင်ရောက်ပါသည်!]*\n"
+                f"🆔 အော်ဒာ ID: #{order_id}\n\n"
                 f"👤 ဝယ်ယူသူ: {cust_name}\n"
                 f"ဆိုင်: {shop_name}\n"
                 f"မီနူး: {combined_menu_names}\n"
-                f"ကျသင့်ငွေ (မီနူးစုစုပေါင်း): {menu_total:,.0f} ကျပ်\n"
-                f"ရွေးချယ်ထားသော Deli: {deli_name}"
+                f"💰 ကျသင့်ငွေ (မီနူးစုစုပေါင်း): {menu_total:,.0f} ကျပ်\n"
+                f"🛵 ရွေးချယ်ထားသော Deli: {deli_name}"
             )
-            send_telegram_notification("5921089974", fallback_admin_msg)
+            send_telegram_notification_with_button("5921089974", fallback_admin_msg, order_id)
 
         # 🔔 2. Delivery ဘက်သို့ ပို့ရန်
         deli_msg = (
-            f"[Delivery ပို့ရန် Order အသစ်! #ID: {order_id}]\n\n"
+            f"🛵 *[Delivery ပို့ရန် Order အသစ်!]*\n"
+            f"🆔 အော်ဒာ ID: #{order_id}\n\n"
             f"ဝယ်ယူသူ: {cust_name}\n"
             f"ဖုန်းနံပါတ်: {cust_phone}\n"
             f"လိပ်စာ: {cust_address}\n"
             f"မှတ်ချက်: {cust_remark or 'မရှိပါ'}\n\n"
             f"ဆိုင်: {shop_name}\n"
             f"မီနူး: {combined_menu_names}\n"
-            f"ကောက်ခံရန်ငွေ: {float(total_price or 0):,.0f} ကျပ်"
+            f"💵 ကောက်ခံရန်ငွေ: {float(total_price or 0):,.0f} ကျပ်"
         )
         send_telegram_notification(DELIVERY_CHAT_ID, deli_msg)
 
