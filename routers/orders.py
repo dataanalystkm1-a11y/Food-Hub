@@ -88,7 +88,6 @@ async def create_order(request: Request):
             "total_amount": total_price,
             "shop_name": shop_name,
             "deli_name": deli_name,
-            "deli_id": deli_id,
             "menu_name": combined_menu_names,
             "order_status": "Pending"
         }
@@ -121,20 +120,26 @@ async def create_order(request: Request):
                 except Exception as sub_err:
                     print(f"Order Item Insert Error: {sub_err}")
 
-                # Supabase မှ မီနူးနှင့် ဆိုင်အချက်အလက်များကို ဆွဲထုတ်၍ ဆိုင်အလိုက် Group ဖွဲ့ရန်
+                # Supabase မှ မီနူးနှင့် ဆိုင်အချက်အလက်များကို ဆွဲထုတ်ခြင်း
                 try:
-                    menu_res = supabase.table("menu").select("*, shops(*)").eq("menu_id", menu_id).execute()
+                    menu_res = supabase.table("menu").select("*, shops(shop_id, shop_name, chat_id)").eq("menu_id", menu_id).execute()
                     if menu_res.data:
                         menu_data = menu_res.data[0]
                         shop_info = menu_data.get("shops") or {}
+                        
+                        # တစ်ခါတလေ shops က list ဖြစ်နေတတ်လို့ လုံခြုံအောင်စစ်ခြင်း
+                        if isinstance(shop_info, list) and len(shop_info) > 0:
+                            shop_info = shop_info[0]
+
                         s_id = shop_info.get("shop_id")
                         s_name = shop_info.get("shop_name", shop_name)
+                        s_chat_id = shop_info.get("chat_id")
                         
                         if s_id:
                             if s_id not in shop_items_map:
                                 shop_items_map[s_id] = {
                                     "shop_name": s_name,
-                                    "chat_id": shop_info.get("chat_id"),
+                                    "chat_id": s_chat_id,
                                     "items": []
                                 }
                             shop_items_map[s_id]["items"].append({
@@ -145,14 +150,13 @@ async def create_order(request: Request):
                 except Exception as group_err:
                     print(f"Shop Grouping Error: {group_err}")
 
-        # 🔔 1. ဆိုင်တစ်ဆိုင်ချင်းစီဆီသို့ သီးသန့် Telegram Message များ ပို့ခြင်း
+        # 🔔 1. ဆိုင်တစ်ဆိုင်ချင်းစီဆီသို့ ၄င်းတို့၏ သီးသန့် Chat ID ဖြင့် မက်ဆေ့ချ်ပို့ခြင်း
         if shop_items_map:
             for s_id, s_data in shop_items_map.items():
                 s_chat_id = s_data.get("chat_id")
                 s_n = s_data.get("shop_name")
                 s_itms = s_data.get("items", [])
 
-                # ဆိုင်အလိုက် မီနူးစာရင်းနှင့် စုစုပေါင်းငွေ တွက်ချက်ခြင်း
                 menu_lines = []
                 shop_menu_total = 0
                 for itm in s_itms:
@@ -172,11 +176,12 @@ async def create_order(request: Request):
                 )
 
                 if s_chat_id:
+                    print(f"Sending Telegram to Shop '{s_n}' with Chat ID: {s_chat_id}")
                     send_telegram_notification(str(s_chat_id), shop_msg)
                 else:
-                    print(f"Shop '{s_n}' has no Chat ID configured. Skipping Telegram notification.")
+                    print(f"Shop '{s_n}' has no Chat ID configured in database.")
         else:
-            # Fallback (ဆိုင်အချက်အလက် မမိလိုက်ရင် ရှေ့ကအတိုင်း ပို့မည်)
+            # Fallback
             menu_total = sum(float(item.get("price", 0)) * int(item.get("quantity", 1)) for item in items) if items else float(total_price or 0)
             fallback_admin_msg = (
                 f"[Order အသစ်ဝင်ရောက်ပါသည်! #ID: {order_id}]\n\n"
@@ -188,7 +193,7 @@ async def create_order(request: Request):
             )
             send_telegram_notification("5921089974", fallback_admin_msg)
 
-        # 🔔 2. Delivery ဘက်သို့ (Customer အချက်အလက် အပြည့်အစုံနှင့် ကျသင့်ငွေအစုံပါဝင်သည်)
+        # 🔔 2. Delivery ဘက်သို့ ပို့ရန်
         deli_msg = (
             f"[Delivery ပို့ရန် Order အသစ်! #ID: {order_id}]\n\n"
             f"ဝယ်ယူသူ: {cust_name}\n"
