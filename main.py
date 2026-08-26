@@ -1,10 +1,12 @@
+import os
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import List, Optional
 from database import supabase
-from routers import orders, menus, shops_portal  # <--- ၁။ ဒီမှာ ပါရပါမယ်
+from routers import orders, menus, shops_portal  # <--- ၁။ ပါရပါမယ်
 
 app = FastAPI(title="WATI Food Hub API")
 
@@ -38,7 +40,16 @@ def send_telegram_notification(chat_id: str, message: str):
 # Routers များကို ချိတ်ဆက်ခြင်း
 app.include_router(orders.router)
 app.include_router(menus.router)
-app.include_router(shops_portal.router)  # <--- ၂။ ဒီမှာ ထည့်ပေးရပါမယ်
+app.include_router(shops_portal.router)  # <--- ၂။ ထည့်ပေးရပါမယ်
+
+# --- Shop Dashboard UI ကို Render လုပ်ရန် ---
+@app.get("/shop-dashboard", response_class=HTMLResponse)
+async def shop_dashboard():
+    file_path = "templates/shop_dashboard.html"
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h1>Dashboard template not found</h1>"
 
 # Shops API Endpoint
 @app.get("/shops")
