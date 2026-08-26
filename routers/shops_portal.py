@@ -87,7 +87,7 @@ async def get_shop_info(shop_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- 6. ဆိုင်အတွက် ဝင်လာသော အော်ဒာများကို ဆွဲထုတ်ရန် ---
+# --- 6. ဆိုင်အတွက် ဝင်လာသော အော်ဒာများကို shop_id ဖြင့် တိုက်ရိုက်ဆွဲထုတ်ရန် ---
 @router.get("/orders/{shop_id}")
 async def get_shop_orders(shop_id: int):
     try:
