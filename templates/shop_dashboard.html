@@ -16,7 +16,7 @@
                 <h1 class="text-2xl font-bold text-gray-800">ဆိုင်ပိုင်ရှင် စီမံခန့်ခွဲမှု ပန်နယ်</h1>
                 <p class="text-sm text-gray-500">အော်ဒာများကို စစ်ဆေးခြင်းနှင့် မီနူးများပြင်ဆင်ခြင်း</p>
             </div>
-            <!-- ဆိုင်နာမည်နှင့် Active Shop ပေါ်မည့်နေရာ -->
+            <!-- ဆိုင်နာမည်ပေါ်မည့်နေရာ -->
             <div id="shop-info" class="text-right">
                 <span class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">Active Shop</span>
             </div>
@@ -26,12 +26,11 @@
         <div class="bg-white p-6 rounded-lg shadow-md mb-6">
             <h2 class="text-xl font-semibold mb-4 text-gray-700">ဝင်လာသော အော်ဒာများ (Incoming Orders)</h2>
             <div id="orders-list" class="space-y-4">
-                <!-- Orders များကို JavaScript ဖြင့် ဤနေရာတွင် ထည့်သွင်းမည် -->
                 <p class="text-gray-500 text-sm">အော်ဒာများကို ရှာဖွေနေပါသည်...</p>
             </div>
         </div>
 
-        <!-- Section 2: Menu Management (Add & Update) -->
+        <!-- Section 2: Menu Management -->
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-xl font-semibold mb-4 text-gray-700">မီနူးစာရင်း စီမံရန်</h2>
             
@@ -46,21 +45,20 @@
             </div>
 
             <!-- Existing Menus List -->
-            <div id="menu-list" class="space-y-3">
-                <!-- Existing menus will load here -->
-            </div>
+            <div id="menu-list" class="space-y-3"></div>
         </div>
     </div>
 
     <!-- JavaScript for API Integration -->
     <script>
-        const API_BASE_URL = window.location.origin; // Render backend URL
+        const API_BASE_URL = window.location.origin; 
         
-        // URL မှ shop_id ကို ယူမည် (ဥပမာ - ?shop_id=2 ဖြစ်ပါက 2 ကို ယူမည်၊ မပါလျှင် default အနေဖြင့် 1 ကို သုံးမည်)
+        // URL မှ shop_id ကို ယူမည် (Space များကို .trim() ဖြင့် ဖြတ်ထုတ်မည်)
         const urlParams = new URLSearchParams(window.location.search);
-        const shopId = urlParams.get('shop_id') ? parseInt(urlParams.get('shop_id')) : 1; 
+        const rawShopId = urlParams.get('shop_id');
+        const shopId = rawShopId ? parseInt(rawShopId.trim()) : 1; 
 
-        // 0. ဆိုင်အချက်အလက်နှင့် ဆိုင်နာမည်ကို ဆွဲထုတ်ရန်
+        // ၁။ ဆိုင်အချက်အလက် (ဆိုင်နာမည်) ဆွဲထုတ်ရန်
         async function fetchShopInfo() {
             try {
                 const response = await fetch(`${API_BASE_URL}/shop-portal/info/${shopId}`);
@@ -78,7 +76,33 @@
             }
         }
 
-        // 1. ဆိုင်၏ မီနူးများကို ဆွဲထုတ်ရန်
+        // ၂။ ဝင်လာသော အော်ဒာများကို ဆွဲထုတ်ရန် (Backend မှာ /shop-portal/orders/{shop_id} endpoint ရှိရပါမည်)
+        async function fetchOrders() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/shop-portal/orders/${shopId}`);
+                const result = await response.json();
+                const ordersList = document.getElementById('orders-list');
+                
+                if(result.success && result.data.length > 0) {
+                    ordersList.innerHTML = result.data.map(order => `
+                        <div class="bg-gray-50 p-4 rounded border flex justify-between items-center">
+                            <div>
+                                <p class="font-bold text-gray-800">အော်ဒာ #${order.order_id} - ${order.customer_name || 'Customer'}</p>
+                                <p class="text-sm text-gray-600">${order.items_description || 'ပစ္စည်းများ'} (${order.total_price} ကျပ်)</p>
+                            </div>
+                            <span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2.5 py-1 rounded">စောင့်ဆိုင်းဆဲ</span>
+                        </div>
+                    `).join('');
+                } else {
+                    ordersList.innerHTML = `<p class="text-gray-500 text-sm">လတ်တလော ဝင်ထားသော အော်ဒာ မရှိသေးပါ။</p>`;
+                }
+            } catch (error) {
+                console.error("Error fetching orders:", error);
+                document.getElementById('orders-list').innerHTML = `<p class="text-red-500 text-sm">အော်ဒာများကို ဆွဲထုတ်၍ မရပါ။</p>`;
+            }
+        }
+
+        // ၃။ ဆိုင်၏ မီနူးများကို ဆွဲထုတ်ရန်
         async function fetchMenus() {
             try {
                 const response = await fetch(`${API_BASE_URL}/shop-portal/menu/${shopId}`);
@@ -106,7 +130,7 @@
             }
         }
 
-        // 2. မီနူးအသစ် ထည့်သွင်းခြင်း
+        // ၄။ မီနူးအသစ် ထည့်သွင်းခြင်း
         async function addNewMenu() {
             const name = document.getElementById('new-menu-name').value;
             const price = document.getElementById('new-menu-price').value;
@@ -134,7 +158,7 @@
             }
         }
 
-        // 3. ဈေးနှုန်း အသစ်ပြင်ဆင်ခြင်း
+        // ၅။ ဈေးနှုန်း အသစ်ပြင်ဆင်ခြင်း
         async function updatePrice(menuId) {
             const newPrice = document.getElementById(`price-${menuId}`).value;
             if(!newPrice) {
@@ -158,9 +182,10 @@
             }
         }
 
-        // Page စတင်ဖွင့်ချိန်တွင် ဆိုင်အချက်အလက်နှင့် မီနူးများ ဆွဲထုတ်ရန်
+        // Page စတင်ဖွင့်ချိန်တွင် အချက်အလက်များ အားလုံး ဆွဲထုတ်ရန်
         window.onload = () => {
             fetchShopInfo();
+            fetchOrders();
             fetchMenus();
         };
     </script>
