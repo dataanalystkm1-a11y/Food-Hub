@@ -12,7 +12,7 @@ DELIVERY_CHAT_ID = "7295294892"          # Deli Team Chat ID
 
 def send_telegram_notification(chat_id: str, message: str):
     if not TELEGRAM_BOT_TOKEN or not chat_id:
-        print("Telegram Warning: Token or Chat ID is missing.")
+        print(f"Telegram Warning: Token or Chat ID is missing. (chat_id: {chat_id})")
         return
     
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
@@ -22,7 +22,7 @@ def send_telegram_notification(chat_id: str, message: str):
     }
     try:
         response = requests.post(url, json=payload)
-        print(f"Telegram Response for {chat_id}:", response.text)
+        print(f"Telegram Response for Chat ID {chat_id}:", response.text)
     except Exception as e:
         print(f"Telegram Notification Error: {e}")
 
@@ -59,25 +59,25 @@ async def get_batch_orders(request: Request):
 async def create_order(request: Request):
     try:
         body = await request.json()
-        print("Received Frontend Data:", body)
+        print("====== RECEIVED FRONTEND ORDER DATA ======", body)
 
         items = body.get("items", [])
+        print("Extracted Items:", items)
+
         menu_names_list = []
         for item in items:
             m_name = item.get("menu_name") or item.get("name") or item.get("title")
             if m_name:
                 menu_names_list.append(str(m_name))
         
-        combined_menu_names = ", ".join(menu_names_list) if menu_names_list else body.get("menu_name")
+        combined_menu_names = ", ".join(menu_names_list) if menu_names_list else body.get("menu_name", "Menu")
 
-        # deli_id ကို frontend က ပို့လာသည်များကို ဖမ်းယူခြင်း
         deli_id = body.get("deli_id") or body.get("deli")
-
-        cust_name = body.get("customer_name") or body.get("name")
-        cust_phone = body.get("phone") or body.get("customer_phone")
-        cust_address = body.get("address") or body.get("customer_address")
+        cust_name = body.get("customer_name") or body.get("name", "Customer")
+        cust_phone = body.get("phone") or body.get("customer_phone", "-")
+        cust_address = body.get("address") or body.get("customer_address", "-")
         cust_remark = body.get("customer_remark") or body.get("remark", "")
-        total_price = body.get("total_price") or body.get("total_amount")
+        total_price = body.get("total_price") or body.get("total_amount", 0)
         shop_name = body.get("shop_name", "ဆိုင်")
         deli_name = body.get("deli_name", "Deli")
 
@@ -93,17 +93,19 @@ async def create_order(request: Request):
         }
 
         response = supabase.table("orders").insert(order_payload).execute()
-        
         created_order = response.data[0] if response.data else {}
         order_id = created_order.get("order_id", "---")
+        print(f"Created Order ID: {order_id}")
 
-        # 🛒 Order Items များကို Supabase သို့ ထည့်သွင်းခြင်း နှင့် ဆိုင်အလိုက် စုစည်းခြင်း
+        # 🛒 Order Items များကို Supabase သို့ ထည့်သွင်းခြင်း နှင့် ဆိုင်အလိုက် Group ဖွဲ့ခြင်း
         shop_items_map = {}  # { shop_id: { "shop_name": ..., "chat_id": ..., "items": [...] } }
 
         if created_order and "order_id" in created_order and items:
             for item in items:
                 menu_id = item.get("menu_id") or item.get("id")
+                print(f"Processing item menu_id: {menu_id}")
                 if not menu_id:
+                    print("Skipping item because menu_id is missing.")
                     continue
 
                 qty = int(item.get("quantity", 1))
@@ -123,11 +125,12 @@ async def create_order(request: Request):
                 # Supabase မှ မီနူးနှင့် ဆိုင်အချက်အလက်များကို ဆွဲထုတ်ခြင်း
                 try:
                     menu_res = supabase.table("menu").select("*, shops(shop_id, shop_name, chat_id)").eq("menu_id", menu_id).execute()
+                    print(f"Menu Query Result for menu_id {menu_id}:", menu_res.data)
+                    
                     if menu_res.data:
                         menu_data = menu_res.data[0]
                         shop_info = menu_data.get("shops") or {}
                         
-                        # တစ်ခါတလေ shops က list ဖြစ်နေတတ်လို့ လုံခြုံအောင်စစ်ခြင်း
                         if isinstance(shop_info, list) and len(shop_info) > 0:
                             shop_info = shop_info[0]
 
@@ -135,6 +138,8 @@ async def create_order(request: Request):
                         s_name = shop_info.get("shop_name", shop_name)
                         s_chat_id = shop_info.get("chat_id")
                         
+                        print(f"Found Shop -> ID: {s_id}, Name: {s_name}, Chat ID: {s_chat_id}")
+
                         if s_id:
                             if s_id not in shop_items_map:
                                 shop_items_map[s_id] = {
@@ -150,7 +155,9 @@ async def create_order(request: Request):
                 except Exception as group_err:
                     print(f"Shop Grouping Error: {group_err}")
 
-        # 🔔 1. ဆိုင်တစ်ဆိုင်ချင်းစီဆီသို့ ၄င်းတို့၏ သီးသန့် Chat ID ဖြင့် မက်ဆေ့ချ်ပို့ခြင်း
+        print("Final shop_items_map:", shop_items_map)
+
+        # 🔔 1. ဆိုင်တစ်ဆိုင်ချင်းစီဆီသို့ သီးသန့် Chat ID ဖြင့် မက်ဆေ့ချ်ပို့ခြင်း
         if shop_items_map:
             for s_id, s_data in shop_items_map.items():
                 s_chat_id = s_data.get("chat_id")
@@ -179,9 +186,10 @@ async def create_order(request: Request):
                     print(f"Sending Telegram to Shop '{s_n}' with Chat ID: {s_chat_id}")
                     send_telegram_notification(str(s_chat_id), shop_msg)
                 else:
-                    print(f"Shop '{s_n}' has no Chat ID configured in database.")
+                    print(f"⚠️ Shop '{s_n}' has NO Chat ID configured in database! Sending to admin fallback instead.")
+                    send_telegram_notification("5921089974", f"(Admin Fallback for {s_n})\n\n" + shop_msg)
         else:
-            # Fallback
+            print("⚠️ shop_items_map is empty! Using fallback message.")
             menu_total = sum(float(item.get("price", 0)) * int(item.get("quantity", 1)) for item in items) if items else float(total_price or 0)
             fallback_admin_msg = (
                 f"[Order အသစ်ဝင်ရောက်ပါသည်! #ID: {order_id}]\n\n"
