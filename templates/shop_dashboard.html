@@ -54,7 +54,10 @@
     <!-- JavaScript for API Integration -->
     <script>
         const API_BASE_URL = window.location.origin; // Render backend URL
-        const shopId = 1; // ဥပမာ - လက်ရှိ ဆိုင် ID (Login ဝင်ထားသောဆိုင်)
+        
+        // URL မှ shop_id ကို ယူမည် (ဥပမာ - ?shop_id=2 ဖြစ်ပါက 2 ကို ယူမည်၊ မပါလျှင် default အနေဖြင့် 1 ကို သုံးမည်)
+        const urlParams = new URLSearchParams(window.location.search);
+        const shopId = urlParams.get('shop_id') ? parseInt(urlParams.get('shop_id')) : 1; 
 
         // 1. ဆိုင်၏ မီနူးများကို ဆွဲထုတ်ရန်
         async function fetchMenus() {
@@ -65,7 +68,7 @@
                 
                 if(result.success && result.data.length > 0) {
                     menuList.innerHTML = result.data.map(item => `
-                        flex justify-between items-center bg-gray-50 p-3 rounded border">
+                        <div class="flex justify-between items-center bg-gray-50 p-3 rounded border">
                             <div>
                                 <span class="font-medium text-gray-800">${item.menu_name}</span>
                                 <span class="text-gray-500 text-sm ml-2">${item.price} ကျပ်</span>
