@@ -75,3 +75,23 @@ async def get_shop_menus(shop_id: int):
         return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- 5. ဆိုင်အချက်အလက် (ဆိုင်နာမည်) ကို ဆွဲထုတ်ရန် ---
+@router.get("/info/{shop_id}")
+async def get_shop_info(shop_id: int):
+    try:
+        response = supabase.table("shops").select("*").eq("shop_id", shop_id).execute()
+        if response.data:
+            return {"success": True, "data": {"shop_name": response.data[0].get("shop_name", "Shop")}}
+        return {"success": False, "message": "Shop not found"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- 6. ဆိုင်အတွက် ဝင်လာသော အော်ဒာများကို ဆွဲထုတ်ရန် ---
+@router.get("/orders/{shop_id}")
+async def get_shop_orders(shop_id: int):
+    try:
+        response = supabase.table("orders").select("*").eq("shop_id", shop_id).execute()
+        return {"success": True, "data": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
