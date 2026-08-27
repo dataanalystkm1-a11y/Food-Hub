@@ -40,7 +40,7 @@
                     <input type="text" id="newMenuName" placeholder="မီနူးအမည်" class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <input type="number" id="newMenuPrice" placeholder="ဈေးနှုန်း (ကျပ်)" class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <input type="text" id="newMenuImage" placeholder="ပုံလင့်ခ် (Image URL) - optional" class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button onclick="addMenu()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition">မီနူးအသစ် ထည့်မည်</button>
+                    <button id="addMenuBtn" onclick="addMenu()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition">မီနူးအသစ် ထည့်မည်</button>
                 </div>
             </div>
 
@@ -95,7 +95,8 @@
                                     <div class="flex flex-col gap-1 w-full md:w-auto">
                                         <input type="text" id="img_${menu.menu_id}" value="${menu.image_url && menu.image_url !== 'EMPTY' ? menu.image_url : ''}" placeholder="ပုံလင့်ခ် (Image URL)" class="border border-gray-300 rounded-lg px-3 py-1 w-full md:w-48 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                                     </div>
-                                    <button onclick="updateMenu(${menu.menu_id})" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition w-full md:w-auto whitespace-nowrap">ပြင်ဆင်မည်</button>
+                                    <button onclick="updateMenu(${menu.menu_id})" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition whitespace-nowrap">ပြင်ဆင်မည်</button>
+                                    <button onclick="deleteMenu(${menu.menu_id})" class="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-3 py-2 rounded-lg transition whitespace-nowrap">ဖြတ်မည်</button>
                                 </div>
                             </div>
                         `;
@@ -108,11 +109,12 @@
             }
         }
 
-        // မီနူးအသစ် ထည့်သွင်းခြင်း
+        // မီနူးအသစ် ထည့်သွင်းခြင်း (Double-click ကာကွယ်ရန် Button ကို ခဏပိတ်ထားမည်)
         async function addMenu() {
             const menuName = document.getElementById('newMenuName').value;
             const price = document.getElementById('newMenuPrice').value;
             const imageUrl = document.getElementById('newMenuImage').value;
+            const addBtn = document.getElementById('addMenuBtn');
 
             if (!menuName || !price) {
                 alert("ကျေးဇူးပြု၍ မီနူးအမည်နှင့် ဈေးနှုန်း အပြည့်အစုံ ထည့်ပါ။");
@@ -120,6 +122,9 @@
             }
 
             try {
+                addBtn.disabled = true;
+                addBtn.innerText = "ထည့်သွင်းနေသည်...";
+
                 const res = await fetch('/shop-portal/menu', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -142,6 +147,9 @@
             } catch (error) {
                 console.error("Add menu error:", error);
                 alert("ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်။");
+            } finally {
+                addBtn.disabled = false;
+                addBtn.innerText = "မီနူးအသစ် ထည့်မည်";
             }
         }
 
@@ -181,6 +189,29 @@
                 }
             } catch (error) {
                 console.error("Update menu error:", error);
+                alert("ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်။");
+            }
+        }
+
+        // မီနူးဖျက်ရန် Function
+        async function deleteMenu(menuId) {
+            if (!confirm("ဤမီနူးကို အမှန်တကယ် ဖျက်မှာ သေချာပါသလား?")) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/shop-portal/menu/${menuId}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("မီနူးကို အောင်မြင်စွာ ဖျက်ပြီးပါပြီ။");
+                    loadShopData();
+                } else {
+                    alert("မီနူးဖျက်ခြင်း မအောင်မြင်ပါ။");
+                }
+            } catch (error) {
+                console.error("Delete menu error:", error);
                 alert("ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်။");
             }
         }
