@@ -44,6 +44,15 @@ app.include_router(orders.router)
 app.include_router(menus.router)
 app.include_router(shops_portal.router)
 
+# --- Home Page အတွက် မီနူးအားလုံး ဆွဲထုတ်ရန် Endpoint ---
+@app.get("/menus")
+def get_all_menus():
+    try:
+        response = supabase.table("menu").select("*").execute()
+        return {"success": True, "data": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # --- Telegram Webhook (ဆိုင်ရှင်က Confirm ခလုတ်နှိပ်သည့်အခါ လုပ်ဆောင်ရန်) ---
 @app.post("/telegram-webhook")
 async def telegram_webhook(req: Request):
