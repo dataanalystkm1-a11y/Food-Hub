@@ -36,9 +36,10 @@
             <!-- မီနူးအသစ် ထည့်ရန် Form -->
             <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-4">
                 <h3 class="text-sm font-semibold text-gray-700">မီနူးအသစ် ထည့်ရန်</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <input type="text" id="newMenuName" placeholder="မီနူးအမည်" class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <input type="number" id="newMenuPrice" placeholder="ဈေးနှုန်း (ကျပ်)" class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="newMenuImage" placeholder="ပုံလင့်ခ် (Image URL) - optional" class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <button onclick="addMenu()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition">မီနူးအသစ် ထည့်မည်</button>
                 </div>
             </div>
@@ -75,15 +76,26 @@
 
                 if (menuData.success && menuData.data && menuData.data.length > 0) {
                     menuData.data.forEach(menu => {
+                        // ပုံရှိမရှိ စစ်ဆေးရန် (မရှိရင် default ပုံ သို့မဟုတ် placeholder ပြရန်)
+                        const imageUrl = menu.image_url && menu.image_url !== "EMPTY" ? menu.image_url : "https://via.placeholder.com/60?text=No+Image";
+
                         menuListEl.innerHTML += `
                             <div class="flex flex-col md:flex-row justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100 gap-3">
-                                <div class="w-full md:w-1/2">
-                                    <span class="font-semibold text-gray-800 text-lg">${menu.menu_name}</span>
-                                    <span class="text-gray-500 ml-2">${menu.price ? menu.price.toLocaleString() : 0} ကျပ်</span>
+                                <div class="flex items-center gap-3 w-full md:w-2/5">
+                                    <img src="${imageUrl}" alt="${menu.menu_name}" class="w-12 h-12 object-cover rounded-lg border border-gray-200">
+                                    <div>
+                                        <span class="font-semibold text-gray-800 text-lg block">${menu.menu_name}</span>
+                                        <span class="text-gray-500 text-sm">${menu.price ? menu.price.toLocaleString() : 0} ကျပ်</span>
+                                    </div>
                                 </div>
-                                <div class="flex items-center gap-2 w-full md:w-auto justify-end">
-                                    <input type="number" id="price_${menu.menu_id}" value="${menu.price}" class="border border-gray-300 rounded-lg px-3 py-1 w-32 focus:outline-none focus:ring-2 focus:ring-green-500">
-                                    <button onclick="updatePrice(${menu.menu_id})" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">ဈေးပြောင်းမည်</button>
+                                <div class="flex flex-col md:flex-row items-center gap-2 w-full md:w-3/5 justify-end">
+                                    <div class="flex flex-col gap-1 w-full md:w-auto">
+                                        <input type="number" id="price_${menu.menu_id}" value="${menu.price}" placeholder="ဈေးနှုန်း" class="border border-gray-300 rounded-lg px-3 py-1 w-full md:w-28 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                                    </div>
+                                    <div class="flex flex-col gap-1 w-full md:w-auto">
+                                        <input type="text" id="img_${menu.menu_id}" value="${menu.image_url && menu.image_url !== 'EMPTY' ? menu.image_url : ''}" placeholder="ပုံလင့်ခ် (Image URL)" class="border border-gray-300 rounded-lg px-3 py-1 w-full md:w-48 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                                    </div>
+                                    <button onclick="updateMenu(${menu.menu_id})" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition w-full md:w-auto whitespace-nowrap">ပြင်ဆင်မည်</button>
                                 </div>
                             </div>
                         `;
@@ -100,6 +112,7 @@
         async function addMenu() {
             const menuName = document.getElementById('newMenuName').value;
             const price = document.getElementById('newMenuPrice').value;
+            const imageUrl = document.getElementById('newMenuImage').value;
 
             if (!menuName || !price) {
                 alert("ကျေးဇူးပြု၍ မီနူးအမည်နှင့် ဈေးနှုန်း အပြည့်အစုံ ထည့်ပါ။");
@@ -113,13 +126,15 @@
                     body: JSON.stringify({
                         shop_id: parseInt(shopId),
                         menu_name: menuName,
-                        price: parseFloat(price)
+                        price: parseFloat(price),
+                        image_url: imageUrl || "EMPTY"
                     })
                 });
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('newMenuName').value = '';
                     document.getElementById('newMenuPrice').value = '';
+                    document.getElementById('newMenuImage').value = '';
                     loadShopData();
                 } else {
                     alert("မီနူးထည့်သွင်းမှု မအောင်မြင်ပါ။");
@@ -130,14 +145,18 @@
             }
         }
 
-        // ဈေးနှုန်း ပြောင်းလဲခြင်း
-        async function updatePrice(menuId) {
+        // ဈေးနှုန်းနှင့် ပုံလင့်ခ်ကို တစ်ပါတည်း ပြင်ဆင်ခြင်း
+        async function updateMenu(menuId) {
             const priceInput = document.getElementById(`price_${menuId}`);
+            const imgInput = document.getElementById(`img_${menuId}`);
+
             if (!priceInput) {
-                alert("ဈေးနှုန်းအကွက် ရှာမတွေ့ပါ။");
+                alert("အချက်အလက် ရှာမတွေ့ပါ။");
                 return;
             }
+
             const newPrice = priceInput.value;
+            const newImgUrl = imgInput ? imgInput.value : "";
 
             if (!newPrice) {
                 alert("ကျေးဇူးပြု၍ ဈေးနှုန်း ထည့်ပါ။");
@@ -148,17 +167,20 @@
                 const res = await fetch(`/shop-portal/menu/${menuId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ price: parseFloat(newPrice) })
+                    body: JSON.stringify({ 
+                        price: parseFloat(newPrice),
+                        image_url: newImgUrl || "EMPTY"
+                    })
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert("ဈေးနှုန်း အောင်မြင်စွာ ပြောင်းလဲပြီးပါပြီ။");
+                    alert("မီနူးအချက်အလက် အောင်မြင်စွာ ပြောင်းလဲပြီးပါပြီ။");
                     loadShopData();
                 } else {
-                    alert("ဈေးနှုန်းပြောင်းလဲမှု မအောင်မြင်ပါ။");
+                    alert("ပြောင်းလဲမှု မအောင်မြင်ပါ။");
                 }
             } catch (error) {
-                console.error("Update price error:", error);
+                console.error("Update menu error:", error);
                 alert("ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်။");
             }
         }

@@ -6,7 +6,9 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import List, Optional
 from database import supabase
-from routers import orders, menus, shops_portal  # <--- ၁။ ပါရပါမယ်
+
+# Router များကို တိကျမှန်ကန်စွာ ခေါ်ယူခြင်း
+from routers import orders, menus, shops_portal
 
 app = FastAPI(title="WATI Food Hub API")
 
@@ -37,10 +39,10 @@ def send_telegram_notification(chat_id: str, message: str):
     except Exception as e:
         print(f"Telegram Notification Error: {e}")
 
-# Routers များကို ချိတ်ဆက်ခြင်း
+# Routers များကို အက်ပလီကေးရှင်းသို့ ချိတ်ဆက်ခြင်း
 app.include_router(orders.router)
 app.include_router(menus.router)
-app.include_router(shops_portal.router)  # <--- ၂။ ထည့်ပေးရပါမယ်
+app.include_router(shops_portal.router)
 
 # --- Telegram Webhook (ဆိုင်ရှင်က Confirm ခလုတ်နှိပ်သည့်အခါ လုပ်ဆောင်ရန်) ---
 @app.post("/telegram-webhook")
