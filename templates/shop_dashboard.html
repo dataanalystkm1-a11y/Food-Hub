@@ -132,7 +132,12 @@
 
         // ဈေးနှုန်း ပြောင်းလဲခြင်း
         async function updatePrice(menuId) {
-            const newPrice = document.getElementById(`price_${menuId}`).value;
+            const priceInput = document.getElementById(`price_${menuId}`);
+            if (!priceInput) {
+                alert("ဈေးနှုန်းအကွက် ရှာမတွေ့ပါ။");
+                return;
+            }
+            const newPrice = priceInput.value;
 
             if (!newPrice) {
                 alert("ကျေးဇူးပြု၍ ဈေးနှုန်း ထည့်ပါ။");
