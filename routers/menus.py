@@ -63,3 +63,12 @@ def delete_menu(menu_id: int):
         return {"success": True, "message": "Menu deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    # မီနူးအားလုံးကို ဆွဲထုတ်ရန် (Home page အတွက်)
+@router.get("/menus")
+def get_all_menus():
+    try:
+        response = supabase.table("menu").select("*").execute()
+        return {"success": True, "data": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
