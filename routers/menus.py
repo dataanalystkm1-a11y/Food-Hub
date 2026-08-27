@@ -25,7 +25,11 @@ def get_shop_menus(shop_id: int):
 @router.post("/menu")
 def create_menu(menu: MenuCreate):
     try:
-        response = supabase.table("menu").insert(menu.model_dump()).execute()
+        # price ကို int သို့ ပြောင်းလဲပေးခြင်း
+        menu_data = menu.model_dump()
+        menu_data["price"] = int(menu_data["price"])
+        
+        response = supabase.table("menu").insert(menu_data).execute()
         return {"success": True, "message": "Menu added successfully", "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -33,10 +37,12 @@ def create_menu(menu: MenuCreate):
 @router.put("/menu/{menu_id}")
 def update_menu(menu_id: int, menu_update: MenuUpdate):
     try:
-        # Supabase တွင် ဈေးနှုန်း အပ်ဒိတ်လုပ်ခြင်း
+        # ဒဿမကိန်း မပါစေရန် int သို့ တိကျစွာ ပြောင်းပေးပါ (Database က bigint ဖြစ်သောကြောင့်ပါ)
+        clean_price = int(menu_update.price)
+        
         response = (
             supabase.table("menu")
-            .update({"price": menu_update.price})
+            .update({"price": clean_price})
             .eq("menu_id", menu_id)
             .execute()
         )
