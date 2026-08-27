@@ -44,12 +44,12 @@ app.include_router(orders.router)
 app.include_router(menus.router)
 app.include_router(shops_portal.router)
 
-# --- Home Page အတွက် မီနူးအားလုံး ဆွဲထုတ်ရန် Endpoint ---
+# --- Home Page အတွက် မီနူးအားလုံး ဆွဲထုတ်ရန် Endpoint (Array သက်သက် ပြန်ရန်) ---
 @app.get("/menus")
 def get_all_menus():
     try:
         response = supabase.table("menu").select("*").execute()
-        return {"success": True, "data": response.data}
+        return response.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
