@@ -25,7 +25,7 @@ def get_shop_menus(shop_id: int):
 @router.post("/menu")
 def create_menu(menu: MenuCreate):
     try:
-        response = supabase.table("menu").insert(menu.dict()).execute()
+        response = supabase.table("menu").insert(menu.model_dump()).execute()
         return {"success": True, "message": "Menu added successfully", "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -33,11 +33,21 @@ def create_menu(menu: MenuCreate):
 @router.put("/menu/{menu_id}")
 def update_menu(menu_id: int, menu_update: MenuUpdate):
     try:
-        # Supabase table "menu" ထဲမှ menu_id နဲ့ ကိုက်ညီသော ဈေးနှုန်းကို update လုပ်ရန်
-        response = supabase.table("menu").update({"price": menu_update.price}).eq("menu_id", menu_id).execute()
-        return {"success": True, "message": "Menu updated successfully", "data": response.data}
+        # Supabase တွင် ဈေးနှုန်း အပ်ဒိတ်လုပ်ခြင်း
+        response = (
+            supabase.table("menu")
+            .update({"price": menu_update.price})
+            .eq("menu_id", menu_id)
+            .execute()
+        )
+        
+        return {
+            "success": True, 
+            "message": "Menu updated successfully", 
+            "data": response.data if hasattr(response, "data") else []
+        }
     except Exception as e:
-        print(f"Update Menu Error: {e}")
+        print(f"Update Menu Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/menu/{menu_id}")
