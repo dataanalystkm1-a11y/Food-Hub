@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional
 from database import supabase
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+import time
+import os
 
 router = APIRouter(prefix="/shop-portal", tags=["Shop Portal"])
 
@@ -14,11 +15,16 @@ class MenuCreate(BaseModel):
     menu_name: str
     price: float
     description: Optional[str] = ""
+    status: Optional[str] = "Active"
 
 class MenuUpdate(BaseModel):
     menu_name: Optional[str] = None
     price: Optional[float] = None
     description: Optional[str] = None
+    status: Optional[str] = None
+
+class MenuStatusUpdate(BaseModel):
+    status: str  # Active သို့မဟုတ် Inactive
 
 # --- 1. Order Status ကို ပြောင်းလဲခြင်း (Confirm လုပ်ခြင်း) ---
 @router.put("/orders/{order_id}/status")
@@ -39,7 +45,8 @@ async def add_menu_item(payload: MenuCreate):
             "shop_id": payload.shop_id,
             "menu_name": payload.menu_name,
             "price": payload.price,
-            "description": payload.description
+            "description": payload.description,
+            "status": payload.status
         }
         response = supabase.table("menu").insert(menu_payload).execute()
         return {"success": True, "message": "Menu added successfully", "data": response.data}
@@ -57,6 +64,8 @@ async def update_menu_item(menu_id: int, payload: MenuUpdate):
             update_data["price"] = payload.price
         if payload.description is not None:
             update_data["description"] = payload.description
+        if payload.status is not None:
+            update_data["status"] = payload.status
 
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields to update")
@@ -65,6 +74,17 @@ async def update_menu_item(menu_id: int, payload: MenuUpdate):
         if not response.data:
             raise HTTPException(status_code=404, detail="Menu item not found")
         return {"success": True, "message": "Menu updated successfully", "data": response.data[0]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- 3.1 မီနူး Status (Active / Inactive) သီးသန့်ပြောင်းလဲခြင်း ---
+@router.put("/menu/status/{menu_id}")
+async def update_menu_status(menu_id: int, payload: MenuStatusUpdate):
+    try:
+        response = supabase.table("menu").update({"status": payload.status}).eq("menu_id", menu_id).execute()
+        if not response.data:
+            raise HTTPException(status_code=404, detail="Menu item not found")
+        return {"success": True, "message": f"Menu status updated to {payload.status}", "data": response.data[0]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -97,23 +117,16 @@ async def get_shop_orders(shop_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    from fastapi import UploadFile, File, Form
-import os
-
-# --- 7. ဆိုင်ရှင်များ ဖုန်း/ကွန်ပျူ터မှ ပုံတင်ရန် Endpoint ---
+# --- 7. ဆိုင်ရှင်များ ဖုန်း/ကွန်ပျူတာမှ ပုံတင်ရန် Endpoint ---
 @router.post("/upload-image")
 async def upload_shop_image(file: UploadFile = File(...), shop_id: int = Form(...)):
     try:
-        # ဖိုင်အမျိုးအစား စစ်ဆေးခြင်း
         contents = await file.read()
         file_extension = file.filename.split(".")[-1]
         
-        # Unique ဖြစ်မယ့် ဖိုင်နာမည် ဖန်တီးခြင်း (ဥပမာ: shop_100001_168923456.jpg)
-        import time
         file_name = f"shop_{shop_id}_{int(time.time())}.{file_extension}"
-        file_path = f"Mei Mei Shop/{file_name}" # Supabase bucket ထဲရှိ folder ဖွဲ့စည်းပုံအလိုက်
+        file_path = f"Mei Mei Shop/{file_name}"
         
-        # Supabase Storage (`menu-images` bucket) သို့ upload တင်ခြင်း
         response = supabase.storage.from_("menu-images").upload(
             path=file_path,
             file=contents,
