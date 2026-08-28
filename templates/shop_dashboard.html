@@ -126,7 +126,7 @@
             });
             const data = await res.json();
             if (data.success) {
-                return data.image_path; // ဥပမာ: "Mei Mei Shop/shop_100001_12345.jpg"
+                return data.image_path; 
             }
             throw new Error("Image upload failed");
         }
@@ -168,6 +168,10 @@
                     document.getElementById('newMenuName').value = '';
                     document.getElementById('newMenuPrice').value = '';
                     fileInput.value = '';
+                    
+                    // မီနူးအသစ်ထည့်ပြီးကြောင်း Alert/Popup ပေါ်လာရန်
+                    alert(`"${menuName}" မီနူးအသစ်ကို အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီရှင်! ✨`);
+                    
                     loadShopData();
                 } else {
                     alert("မီနူးထည့်သွင်းမှု မအောင်မြင်ပါ။");
@@ -196,7 +200,6 @@
             }
 
             try {
-                // ပုံအသစ် ရွေးထားရင် ပထမဆုံး Upload တင်မည်၊ မရွေးထားရင် ဟောင်းအတိုင်း ထားမည်
                 let updatePayload = { price: parseFloat(newPrice) };
                 const fileInput = document.getElementById(`imgFile_${menuId}`);
                 
