@@ -88,7 +88,7 @@ async def update_menu_status(menu_id: int, payload: MenuStatusUpdate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- 4. ဆိုင်တစ်ဆိုင်ချင်းစီ၏ မီနူးစာရင်းများကို ကြည့်ရှုရန် ---
+# --- 4. ဆိုင်တစ်ဆိုင်ချင်းစီ၏ မီနူးစာရင်းအားလုံးကို (Active နှင့် Inactive မခွဲဘဲ) ကြည့်ရှုရန် ---
 @router.get("/menu/{shop_id}")
 async def get_shop_menus(shop_id: int):
     try:
