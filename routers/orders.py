@@ -6,9 +6,8 @@ from database import supabase
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
-# --- Telegram Bot Configuration ---
-TELEGRAM_BOT_TOKEN = "8453664740:AAGiLC4MPpz7Ce_B2-UuZWHyK2TKA35Mj0Q"  # နွေးရဲ့ Bot Token
-DELIVERY_CHAT_ID = "7295294892"          # Deli Team Chat ID
+TELEGRAM_BOT_TOKEN = "8453664740:AAGiLC4MPpz7Ce_B2-UuZWHyK2TKA35Mj0Q" 
+DELIVERY_CHAT_ID = "7295294892" 
 
 def send_telegram_notification_with_button(chat_id: str, message: str, order_id: int):
     if not TELEGRAM_BOT_TOKEN or not chat_id:
@@ -17,7 +16,6 @@ def send_telegram_notification_with_button(chat_id: str, message: str, order_id:
     
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     
-    # Confirm ခလုတ် တစ်ခုတည်းသာ ပါဝင်သော Inline Keyboard
     keyboard = {
         "inline_keyboard": [
             [
@@ -123,8 +121,7 @@ async def create_order(request: Request):
         order_id = created_order.get("order_id", "---")
         print(f"Created Order ID: {order_id}")
 
-        # 🛒 Order Items များကို Supabase သို့ ထည့်သွင်းခြင်း နှင့် ဆိုင်အလိုက် Group ဖွဲ့ခြင်း
-        shop_items_map = {}  # { shop_id: { "shop_name": ..., "chat_id": ..., "items": [...] } }
+        shop_items_map = {} 
 
         if created_order and "order_id" in created_order and items:
             for item in items:
@@ -134,6 +131,16 @@ async def create_order(request: Request):
                     print("Skipping item because menu_id is missing.")
                     continue
 
+                # ⚠️ မီနူး Active ဖြစ်မဖြစ် စစ်ဆေးခြင်း
+                menu_check = supabase.table("menu").select("status, menu_name, shops(shop_id, shop_name, chat_id)").eq("menu_id", menu_id).execute()
+                if menu_check.data:
+                    menu_data = menu_check.data[0]
+                    if menu_data.get("status") != "Active":
+                        raise HTTPException(
+                            status_code=400, 
+                            detail=f"'{menu_data.get('menu_name', 'Item')}' မှာ လက်ရှိ ကုန်နေပါပြီ (Inactive ဖြစ်နေပါသည်)။"
+                        )
+                
                 qty = int(item.get("quantity", 1))
                 price = float(item.get("price", 0))
 
@@ -148,13 +155,9 @@ async def create_order(request: Request):
                 except Exception as sub_err:
                     print(f"Order Item Insert Error: {sub_err}")
 
-                # Supabase မှ မီနူးနှင့် ဆိုင်အချက်အလက်များကို ဆွဲထုတ်ခြင်း
                 try:
-                    menu_res = supabase.table("menu").select("*, shops(shop_id, shop_name, chat_id)").eq("menu_id", menu_id).execute()
-                    print(f"Menu Query Result for menu_id {menu_id}:", menu_res.data)
-                    
-                    if menu_res.data:
-                        menu_data = menu_res.data[0]
+                    if menu_check.data:
+                        menu_data = menu_check.data[0]
                         shop_info = menu_data.get("shops") or {}
                         
                         if isinstance(shop_info, list) and len(shop_info) > 0:
@@ -164,8 +167,6 @@ async def create_order(request: Request):
                         s_name = shop_info.get("shop_name", shop_name)
                         s_chat_id = shop_info.get("chat_id")
                         
-                        print(f"Found Shop -> ID: {s_id}, Name: {s_name}, Chat ID: {s_chat_id}")
-
                         if s_id:
                             if s_id not in shop_items_map:
                                 shop_items_map[s_id] = {
@@ -181,9 +182,7 @@ async def create_order(request: Request):
                 except Exception as group_err:
                     print(f"Shop Grouping Error: {group_err}")
 
-        print("Final shop_items_map:", shop_items_map)
-
-        # 🔔 1. ဆိုင်တစ်ဆိုင်ချင်းစီဆီသို့ Button ပါသော Telegram မက်ဆေ့ချ်ပို့ခြင်း
+        # 🔔 Telegram မက်ဆေ့ချ် ပို့ခြင်း ပုံစံများ
         if shop_items_map:
             for s_id, s_data in shop_items_map.items():
                 s_chat_id = s_data.get("chat_id")
@@ -210,13 +209,10 @@ async def create_order(request: Request):
                 )
 
                 if s_chat_id:
-                    print(f"Sending Telegram to Shop '{s_n}' with Chat ID: {s_chat_id}")
                     send_telegram_notification_with_button(str(s_chat_id), shop_msg, order_id)
                 else:
-                    print(f"⚠️ Shop '{s_n}' has NO Chat ID configured in database! Sending to admin fallback instead.")
                     send_telegram_notification_with_button("5921089974", f"(Admin Fallback for {s_n})\n\n" + shop_msg, order_id)
         else:
-            print("⚠️ shop_items_map is empty! Using fallback message.")
             menu_total = sum(float(item.get("price", 0)) * int(item.get("quantity", 1)) for item in items) if items else float(total_price or 0)
             fallback_admin_msg = (
                 f"📦 *[Order အသစ်ဝင်ရောက်ပါသည်!]*\n"
@@ -229,7 +225,6 @@ async def create_order(request: Request):
             )
             send_telegram_notification_with_button("5921089974", fallback_admin_msg, order_id)
 
-        # 🔔 2. Delivery ဘက်သို့ ပို့ရန်
         deli_msg = (
             f"🛵 *[Delivery ပို့ရန် Order အသစ်!]*\n"
             f"🆔 အော်ဒာ ID: #{order_id}\n\n"
@@ -249,6 +244,8 @@ async def create_order(request: Request):
             "order_id": order_id, 
             "data": response.data
         }
+    except HTTPException as he:
+        raise he
     except Exception as e:
         print(f"Insert Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

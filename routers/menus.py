@@ -10,14 +10,16 @@ class MenuCreate(BaseModel):
     menu_name: str
     price: float
     image_url: Optional[str] = None
+    status: Optional[str] = "Active"
 
 class MenuUpdate(BaseModel):
     price: float
+    status: Optional[str] = "Active"
 
 @router.get("/menu/{shop_id}")
 def get_shop_menus(shop_id: int):
     try:
-        response = supabase.table("menu").select("*").eq("shop_id", shop_id).execute()
+        response = supabase.table("menu").select("*").eq("shop_id", shop_id).eq("status", "Active").execute()
         return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -25,7 +27,6 @@ def get_shop_menus(shop_id: int):
 @router.post("/menu")
 def create_menu(menu: MenuCreate):
     try:
-        # price ကို int သို့ ပြောင်းလဲပေးခြင်း
         menu_data = menu.model_dump()
         menu_data["price"] = int(menu_data["price"])
         
@@ -37,12 +38,11 @@ def create_menu(menu: MenuCreate):
 @router.put("/menu/{menu_id}")
 def update_menu(menu_id: int, menu_update: MenuUpdate):
     try:
-        # ဒဿမကိန်း မပါစေရန် int သို့ တိကျစွာ ပြောင်းပေးပါ (Database က bigint ဖြစ်သောကြောင့်ပါ)
         clean_price = int(menu_update.price)
         
         response = (
             supabase.table("menu")
-            .update({"price": clean_price})
+            .update({"price": clean_price, "status": menu_update.status})
             .eq("menu_id", menu_id)
             .execute()
         )
@@ -64,11 +64,10 @@ def delete_menu(menu_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-    # မီနူးအားလုံးကို ဆွဲထုတ်ရန် (Home page အတွက်)
 @router.get("/menus")
 def get_all_menus():
     try:
-        response = supabase.table("menu").select("*").execute()
+        response = supabase.table("menu").select("*").eq("status", "Active").execute()
         return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
