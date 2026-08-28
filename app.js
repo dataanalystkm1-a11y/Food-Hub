@@ -1,4 +1,5 @@
 const API_BASE_URL = 'https://wati-backend-api.onrender.com';
+const SUPABASE_STORAGE_URL = 'https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/menu-images/';
 
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let allMenus = [];
@@ -15,21 +16,27 @@ function playTapSound() {
     }
 }
 
-// Helpers
+// Helpers - Supabase Path နှင့် Google Drive လင့်ခ်များကို ပုံပေါ်လာစေရန် ပြုပြင်ပေးခြင်း
 function getDriveDirectUrl(url) {
     if (!url || url.trim() === "") return FALLBACK_IMAGE;
-    // Google Drive link ဖြစ်နေရင် direct image link [1mhttps://lh3.googleusercontent.com/d/...[0m သို့ ပြောင်းပေးခြင်း
-    const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (match) {
-        return `https://lh3.googleusercontent.com/d/${match[1]}`;
+    
+    // တစ်ကယ်လို့ Database ထဲမှာ http သို့မဟုတ် https နဲ့စတဲ့ URL အပြည့်အစုံ ဖြစ်နေရင်
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        // Google Drive လင့်ခ်ဟောင်းဖြစ်နေရင် ပြန်ပြင်ပေးရန်
+        const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (match) {
+            return `https://lh3.googleusercontent.com/d/${match[1]}`;
+        }
+        const urlParams = new URLSearchParams(url.split('?')[1]);
+        const fileId = urlParams.get('id');
+        if (fileId) {
+            return `https://lh3.googleusercontent.com/d/${fileId}`;
+        }
+        return url;
     }
-    // Shared ID ပုံစံ (id=...) ဖြစ်နေရင်လည်း စစ်ဆေးရန်
-    const urlParams = new URLSearchParams(url.split('?')[1]);
-    const fileId = urlParams.get('id');
-    if (fileId) {
-        return `https://lh3.googleusercontent.com/d/${fileId}`;
-    }
-    return url;
+    
+    // Database ထဲမှာ Path သက်သက် (ဥပမာ- "Mei Mei Shop/mala duck.jpg" သို့မဟုတ် "fried_rice.jpg") သိမ်းထားလျှင် Supabase URL နှင့် ပေါင်းပေးမည်
+    return SUPABASE_STORAGE_URL + url;
 }
 
 function getShopName(shopId) {
