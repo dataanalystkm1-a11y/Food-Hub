@@ -95,3 +95,35 @@ async def get_shop_orders(shop_id: int):
         return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    from fastapi import UploadFile, File, Form
+import os
+
+# --- 7. ဆိုင်ရှင်များ ဖုန်း/ကွန်ပျူ터မှ ပုံတင်ရန် Endpoint ---
+@router.post("/upload-image")
+async def upload_shop_image(file: UploadFile = File(...), shop_id: int = Form(...)):
+    try:
+        # ဖိုင်အမျိုးအစား စစ်ဆေးခြင်း
+        contents = await file.read()
+        file_extension = file.filename.split(".")[-1]
+        
+        # Unique ဖြစ်မယ့် ဖိုင်နာမည် ဖန်တီးခြင်း (ဥပမာ: shop_100001_168923456.jpg)
+        import time
+        file_name = f"shop_{shop_id}_{int(time.time())}.{file_extension}"
+        file_path = f"Mei Mei Shop/{file_name}" # Supabase bucket ထဲရှိ folder ဖွဲ့စည်းပုံအလိုက်
+        
+        # Supabase Storage (`menu-images` bucket) သို့ upload တင်ခြင်း
+        response = supabase.storage.from_("menu-images").upload(
+            path=file_path,
+            file=contents,
+            file_options={"content-type": file.content_type}
+        )
+        
+        return {
+            "success": True, 
+            "message": "Image uploaded successfully", 
+            "image_path": file_path
+        }
+    except Exception as e:
+        print(f"Upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
