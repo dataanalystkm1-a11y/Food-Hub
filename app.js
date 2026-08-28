@@ -6,33 +6,24 @@ let allMenus = [];
 let allShops = [];
 let allDelis = [];
 
-// Local SVG Placeholder (အင်တာနက်မလို၊ Error လုံးဝမတက်ပါ)
 const FALLBACK_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
 
-// Tap Vibration
 function playTapSound() {
     if ("vibrate" in navigator) {
         navigator.vibrate(50);
     }
 }
 
-// Helpers - Supabase Path နှင့် Google Drive လင့်ခ်များကို ပုံပေါ်လာစေရန် ပြုပြင်ပေးခြင်း
 function getDriveDirectUrl(url) {
     if (!url || url.trim() === "") return FALLBACK_IMAGE;
-    
     if (url.startsWith('http://') || url.startsWith('https://')) {
         const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-        if (match) {
-            return `https://lh3.googleusercontent.com/d/${match[1]}`;
-        }
+        if (match) return `https://lh3.googleusercontent.com/d/${match[1]}`;
         const urlParams = new URLSearchParams(url.split('?')[1]);
         const fileId = urlParams.get('id');
-        if (fileId) {
-            return `https://lh3.googleusercontent.com/d/${fileId}`;
-        }
+        if (fileId) return `https://lh3.googleusercontent.com/d/${fileId}`;
         return url;
     }
-    
     return SUPABASE_STORAGE_URL + url;
 }
 
@@ -44,6 +35,22 @@ function getShopName(shopId) {
 function updateCartUI() {
     document.getElementById('cartCount').innerText = cart.length;
     localStorage.setItem('cart', JSON.stringify(cart));
+}
+
+// ဒေတာအသစ်ကို အမြဲတမ်း တိုက်ရိုက်ဆွဲယူရန် ဖੰကရှင်းသီးသန့်ထုတ်ထားခြင်း
+async function fetchLatestDataSilently() {
+    try {
+        const [shopsRes, menusRes] = await Promise.all([
+            fetch(`${API_BASE_URL}/shops`),
+            fetch(`${API_BASE_URL}/menus`)
+        ]);
+        allShops = await shopsRes.json() || [];
+        const rawMenus = await menusRes.json() || [];
+        // Customer ဘက်တွင် Active ဖြစ်သော မီနူးများကိုသာ စစ်ထုတ်မည်
+        allMenus = rawMenus.filter(menu => menu.status === 'Active');
+    } catch (err) {
+        console.error("Silent Fetch Error:", err);
+    }
 }
 
 function addToCart(item) {
@@ -61,12 +68,10 @@ function removeFromCart(index) {
     openCartModal();
 }
 
-// Drag & Drop
 function dragStart(event, index) {
     event.dataTransfer.setData('text/plain', index);
 }
 
-// Renders
 function renderMenus(menusToRender) {
     const menuContainer = document.getElementById('menuContainer');
     if (menusToRender.length > 0) {
@@ -114,16 +119,12 @@ function renderShops(shopsToRender) {
     }
 }
 
-// Search Logic
 function handleSearch() {
     const query = document.getElementById('searchInput').value.trim().toLowerCase();
     const clearBtn = document.getElementById('clearSearchBtn');
 
-    if (query !== "") {
-        clearBtn.classList.remove('hidden');
-    } else {
-        clearBtn.classList.add('hidden');
-    }
+    if (query !== "") clearBtn.classList.remove('hidden');
+    else clearBtn.classList.add('hidden');
 
     const filteredMenus = allMenus.filter(menu => {
         const menuNameMatch = (menu.menu_name || '').toLowerCase().includes(query);
@@ -131,9 +132,7 @@ function handleSearch() {
         return menuNameMatch || shopNameMatch;
     });
 
-    const filteredShops = allShops.filter(shop => {
-        return (shop.shop_name || '').toLowerCase().includes(query);
-    });
+    const filteredShops = allShops.filter(shop => (shop.shop_name || '').toLowerCase().includes(query));
 
     renderMenus(filteredMenus);
     renderShops(filteredShops);
@@ -141,14 +140,12 @@ function handleSearch() {
 
 function clearSearch() {
     playTapSound();
-    const searchInput = document.getElementById('searchInput');
-    searchInput.value = '';
+    document.getElementById('searchInput').value = '';
     document.getElementById('clearSearchBtn').classList.add('hidden');
     renderMenus(allMenus);
     renderShops(allShops);
 }
 
-// Data Fetching (Active menus သာ စစ်ထုတ်ယူခြင်း)
 async function loadDashboardData() {
     try {
         const [shopsRes, menusRes, deliRes] = await Promise.all([
@@ -160,9 +157,8 @@ async function loadDashboardData() {
         allShops = await shopsRes.json() || [];
         const rawMenus = await menusRes.json() || [];
         
-        // Active ဖြစ်သော မီနူးများကိုသာ အဓိကထား စစ်ထုတ်ခြင်း
+        // Customer ဘက်တွင် Active ဖြစ်သော မီနူးများကိုသာ ပြမည်
         allMenus = rawMenus.filter(menu => menu.status === 'Active');
-
         allDelis = await deliRes.json() || [];
 
         renderShops(allShops);
@@ -189,15 +185,16 @@ async function loadDashboardData() {
             deliContainer.innerHTML = `<p class="text-gray-500 text-sm col-span-2 text-center py-4">Deli မရှိသေးပါ။</p>`;
             deliSelect.innerHTML = `<option value="">Deli မရှိသေးပါ</option>`;
         }
-
     } catch (err) {
         console.error("Data Fetch Error:", err);
     }
 }
 
-// Modals
-function openShopModal(shopName, shopId) {
+// ဆိုင်ကို နှိပ်လိုက်တိုင်း (သို့) ခြင်းတောင်းဖွင့်လိုက်တိုင်း ဒေတာအသစ်ကို နောက်ကွယ်မှ အလိုအလျောက် စစ်ဆေးပေးမည်
+async function openShopModal(shopName, shopId) {
     playTapSound();
+    await fetchLatestDataSilently(); // ဒေတာအသစ် ချက်ချင်းဆွဲမည်
+    
     document.getElementById('shopModalTitle').innerText = shopName;
     const shopMenuList = document.getElementById('shopMenuList');
     const filteredMenus = allMenus.filter(m => String(m.shop_id) === String(shopId));
@@ -218,13 +215,15 @@ function openShopModal(shopName, shopId) {
             `;
         }).join('');
     } else {
-        shopMenuList.innerHTML = `<p class="text-sm text-gray-500 text-center py-8 w-full">ဤဆိုင်တွင် မီနူးစာရင်း ထည့်သွင်းထားခြင်း မရှိသေးပါ။</p>`;
+        shopMenuList.innerHTML = `<p class="text-sm text-gray-500 text-center py-8 w-full">ဤဆိုင်တွင် Active ဖြစ်သော မီနူးစာရင်း မရှိသေးပါ။</p>`;
     }
     document.getElementById('shopModal').classList.remove('hidden');
 }
 
-function openCartModal() {
+async function openCartModal() {
     playTapSound();
+    await fetchLatestDataSilently(); // ဒေတာအသစ် ချက်ချင်းဆွဲမည်
+
     const list = document.getElementById('cartList');
     const subTotalAmount = document.getElementById('subTotalAmount');
 
@@ -274,7 +273,6 @@ function updateTotalWithDeli() {
     document.getElementById('totalAmount').innerText = (subTotal + deliFee).toLocaleString() + " ကျပ် (ခန့်မှန်း)";
 }
 
-// Order တင်ခြင်း
 async function checkoutOrder() {
     playTapSound();
     const name = document.getElementById('custName').value.trim();
@@ -359,7 +357,6 @@ async function checkoutOrder() {
     }
 }
 
-// Success Receipt Popup
 function showSuccessReceiptPopup(orderData) {
     let receiptModal = document.getElementById('successReceiptModal');
     if (!receiptModal) {
@@ -408,7 +405,7 @@ function showSuccessReceiptPopup(orderData) {
                         <span>Deli ခ (${orderData.deli_name}):</span>
                         <span>${orderData.deli_fee.toLocaleString()} ကျပ် <span class="text-[10px] text-gray-500">(မြို့တွင်း)</span></span>
                     </div>
-                    <p class="text-[10px] text-[#B80D0D] italic mt-0.5">* မြို့ပြင်/ရပ်ကွက်အဝေးပိုင်းဖြစ်ပါက Deli ခ ထပ်မံပြောင်းလဲနိုင်ပြီး ဆိုင်မှ ဖုန်းဖြင့် အတည်ပြုပါမည်။</p>
+                    <p class="text-[10px] text-[#B80D0D] italic mt-0.5">* မြို့ပြင်/ရပ်ကွက်အဝေးပိုင်းဖြစ်ပါက Deli ခ ထပ်မံပြောင်းလဲနိုင်ပြီး ဆိုင်ရှင်မှ ဖုန်းဖြင့် အတည်ပြုပါမည်။</p>
                     <div class="flex justify-between font-bold text-sm text-[#B80D0D] border-t pt-1">
                         <span>ကျသင့်ငွေ (ခန့်မှန်း):</span>
                         <span>${orderData.total_amount.toLocaleString()} ကျပ်</span>
@@ -427,12 +424,9 @@ function showSuccessReceiptPopup(orderData) {
 function closeSuccessReceipt() {
     playTapSound();
     const receiptModal = document.getElementById('successReceiptModal');
-    if (receiptModal) {
-        receiptModal.classList.add('hidden');
-    }
+    if (receiptModal) receiptModal.classList.add('hidden');
 }
 
-// Event Listeners Initialization
 window.addEventListener('DOMContentLoaded', () => {
     loadDashboardData();
     updateCartUI();
@@ -453,9 +447,7 @@ window.addEventListener('DOMContentLoaded', () => {
     cartBtn.addEventListener('drop', (e) => {
         e.preventDefault();
         const index = e.dataTransfer.getData('text/plain');
-        if (index !== "" && allMenus[index]) {
-            addToCart(allMenus[index]);
-        }
+        if (index !== "" && allMenus[index]) addToCart(allMenus[index]);
     });
 
     document.getElementById('closeShopBtn').onclick = () => {
@@ -463,7 +455,7 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('shopModal').classList.add('hidden');
     };
     document.getElementById('closeShopBottomBtn').onclick = () => {
-        playTapSound();
+        playTagSound && playTapSound();
         document.getElementById('shopModal').classList.add('hidden');
     };
     
