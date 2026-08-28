@@ -20,9 +20,7 @@ function playTapSound() {
 function getDriveDirectUrl(url) {
     if (!url || url.trim() === "") return FALLBACK_IMAGE;
     
-    // တစ်ကယ်လို့ Database ထဲမှာ http သို့မဟုတ် https နဲ့စတဲ့ URL အပြည့်အစုံ ဖြစ်နေရင်
     if (url.startsWith('http://') || url.startsWith('https://')) {
-        // Google Drive လင့်ခ်ဟောင်းဖြစ်နေရင် ပြန်ပြင်ပေးရန်
         const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
         if (match) {
             return `https://lh3.googleusercontent.com/d/${match[1]}`;
@@ -35,7 +33,6 @@ function getDriveDirectUrl(url) {
         return url;
     }
     
-    // Database ထဲမှာ Path သက်သက် (ဥပမာ- "Mei Mei Shop/mala duck.jpg" သို့မဟုတ် "fried_rice.jpg") သိမ်းထားလျှင် Supabase URL နှင့် ပေါင်းပေးမည်
     return SUPABASE_STORAGE_URL + url;
 }
 
@@ -151,7 +148,7 @@ function clearSearch() {
     renderShops(allShops);
 }
 
-// Data Fetching
+// Data Fetching (Active menus သာ စစ်ထုတ်ယူခြင်း)
 async function loadDashboardData() {
     try {
         const [shopsRes, menusRes, deliRes] = await Promise.all([
@@ -161,7 +158,11 @@ async function loadDashboardData() {
         ]);
 
         allShops = await shopsRes.json() || [];
-        allMenus = await menusRes.json() || [];
+        const rawMenus = await menusRes.json() || [];
+        
+        // Active ဖြစ်သော မီနူးများကိုသာ အဓိကထား စစ်ထုတ်ခြင်း
+        allMenus = rawMenus.filter(menu => menu.status === 'Active');
+
         allDelis = await deliRes.json() || [];
 
         renderShops(allShops);
