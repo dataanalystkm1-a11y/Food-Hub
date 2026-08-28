@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import Optional
 from database import supabase
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 
 router = APIRouter(prefix="/shop-portal", tags=["Shop Portal"])
 
