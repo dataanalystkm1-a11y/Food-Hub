@@ -37,7 +37,7 @@ function updateCartUI() {
     localStorage.setItem('cart', JSON.stringify(cart));
 }
 
-// ဒေတာအသစ်ကို အမြဲတမ်း တိုက်ရိုက်ဆွဲယူရန် ဖੰကရှင်းသီးသန့်ထုတ်ထားခြင်း
+// ဒေတာအသစ်ကို အမြဲတမ်း တိုက်ရိုက်ဆွဲယူရန် ဖੰကရှင်းသီးသန့်ထုတ်ထားခြင်း (Inactive တွေပါ အကုန်ယူမည်)
 async function fetchLatestDataSilently() {
     try {
         const [shopsRes, menusRes] = await Promise.all([
@@ -45,9 +45,7 @@ async function fetchLatestDataSilently() {
             fetch(`${API_BASE_URL}/menus`)
         ]);
         allShops = await shopsRes.json() || [];
-        const rawMenus = await menusRes.json() || [];
-        // Customer ဘက်တွင် Active ဖြစ်သော မီနူးများကိုသာ စစ်ထုတ်မည်
-        allMenus = rawMenus.filter(menu => menu.status === 'Active');
+        allMenus = await menusRes.json() || [];
     } catch (err) {
         console.error("Silent Fetch Error:", err);
     }
@@ -155,10 +153,7 @@ async function loadDashboardData() {
         ]);
 
         allShops = await shopsRes.json() || [];
-        const rawMenus = await menusRes.json() || [];
-        
-        // Customer ဘက်တွင် Active ဖြစ်သော မီနူးများကိုသာ ပြမည်
-        allMenus = rawMenus.filter(menu => menu.status === 'Active');
+        allMenus = await menusRes.json() || []; // Inactive ရော Active ရော အားလုံးရယူမည်
         allDelis = await deliRes.json() || [];
 
         renderShops(allShops);
@@ -190,10 +185,9 @@ async function loadDashboardData() {
     }
 }
 
-// ဆိုင်ကို နှိပ်လိုက်တိုင်း (သို့) ခြင်းတောင်းဖွင့်လိုက်တိုင်း ဒေတာအသစ်ကို နောက်ကွယ်မှ အလိုအလျောက် စစ်ဆေးပေးမည်
 async function openShopModal(shopName, shopId) {
     playTapSound();
-    await fetchLatestDataSilently(); // ဒေတာအသစ် ချက်ချင်းဆွဲမည်
+    await fetchLatestDataSilently(); 
     
     document.getElementById('shopModalTitle').innerText = shopName;
     const shopMenuList = document.getElementById('shopMenuList');
@@ -215,14 +209,14 @@ async function openShopModal(shopName, shopId) {
             `;
         }).join('');
     } else {
-        shopMenuList.innerHTML = `<p class="text-sm text-gray-500 text-center py-8 w-full">ဤဆိုင်တွင် Active ဖြစ်သော မီနူးစာရင်း မရှိသေးပါ။</p>`;
+        shopMenuList.innerHTML = `<p class="text-sm text-gray-500 text-center py-8 w-full">ဤဆိုင်တွင် မီနူးစာရင်း မရှိသေးပါ။</p>`;
     }
     document.getElementById('shopModal').classList.remove('hidden');
 }
 
 async function openCartModal() {
     playTapSound();
-    await fetchLatestDataSilently(); // ဒေတာအသစ် ချက်ချင်းဆွဲမည်
+    await fetchLatestDataSilently();
 
     const list = document.getElementById('cartList');
     const subTotalAmount = document.getElementById('subTotalAmount');
@@ -455,7 +449,7 @@ window.addEventListener('DOMContentLoaded', () => {
         document.getElementById('shopModal').classList.add('hidden');
     };
     document.getElementById('closeShopBottomBtn').onclick = () => {
-        playTagSound && playTapSound();
+        playTapSound();
         document.getElementById('shopModal').classList.add('hidden');
     };
     
