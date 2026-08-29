@@ -16,14 +16,16 @@ class MenuUpdate(BaseModel):
     price: float
     status: Optional[str] = "Active"
 
+# --- ၁။ ဆိုင်ရှင် Dashboard အတွက် (Active ရော Inactive ရော မီနူးအားလုံး ဆွဲထုတ်ရန်) ---
 @router.get("/menu/{shop_id}")
 def get_shop_menus(shop_id: int):
     try:
-        response = supabase.table("menu").select("*").eq("shop_id", shop_id).eq("status", "Active").execute()
+        response = supabase.table("menu").select("*").eq("shop_id", shop_id).execute()
         return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- ၂။ မီနူးအသစ် ထည့်ရန် ---
 @router.post("/menu")
 def create_menu(menu: MenuCreate):
     try:
@@ -35,6 +37,7 @@ def create_menu(menu: MenuCreate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- ၃။ မီနူးအချက်အလက် / ဈေးနှုန်း / Status ပြင်ဆင်ရန် ---
 @router.put("/menu/{menu_id}")
 def update_menu(menu_id: int, menu_update: MenuUpdate):
     try:
@@ -56,6 +59,7 @@ def update_menu(menu_id: int, menu_update: MenuUpdate):
         print(f"Update Menu Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- ၄။ မီနူးဖျက်ရန် ---
 @router.delete("/menu/{menu_id}")
 def delete_menu(menu_id: int):
     try:
@@ -64,6 +68,7 @@ def delete_menu(menu_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- ၅။ ဝယ်သူသုံး App အတွက် (Active ဖြစ်နေသော မီနူးများကိုသာ ဆွဲထုတ်ရန်) ---
 @router.get("/menus")
 def get_all_menus():
     try:
