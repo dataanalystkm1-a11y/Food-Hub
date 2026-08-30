@@ -168,8 +168,8 @@
     </div>
 
     <!-- Option Selection Modal -->
-    <div id="optionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-xl">
+    <div id="optionModal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl relative border-t-4 border-[#B80D0D]">
             <h3 id="optionModalTitle" class="text-base font-bold text-gray-800 mb-2">မီနူး Option များ</h3>
             
             <div id="optionListContainer" class="mb-4 max-h-48 overflow-y-auto">
@@ -177,8 +177,8 @@
             </div>
 
             <div class="flex gap-2">
-                <button onclick="document.getElementById('optionModal').classList.add('hidden')" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-xl text-sm font-semibold">မလုပ်တော့ပါ</button>
-                <button onclick="confirmOptionSelection()" class="flex-1 bg-[#B80D0D] text-white py-2 rounded-xl text-sm font-semibold">ထည့်မည်</button>
+                <button onclick="document.getElementById('optionModal').classList.add('hidden')" class="flex-1 bg-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-300 transition">မလုပ်တော့ပါ</button>
+                <button onclick="confirmOptionSelection()" class="flex-1 bg-[#B80D0D] text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-red-700 transition">အတည်ပြုမည်</button>
             </div>
         </div>
     </div>
