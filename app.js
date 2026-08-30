@@ -160,7 +160,7 @@ async function loadDashboardData() {
         const deliJson = await deliRes.json();
 
         allShops = shopsJson.data || shopsJson;
-        allMenus = menusJson.data || menusJson; // Active ဖြစ်သော မီနူးများသာ ရောက်လာမည်
+        allMenus = menusJson.data || menusJson;
         allDelis = deliJson.data || deliJson;
 
         renderShops(allShops);
