@@ -26,6 +26,13 @@ class MenuUpdate(BaseModel):
 class MenuStatusUpdate(BaseModel):
     status: str  # Active သို့မဟုတ် Inactive
 
+# --- Menu Option များအတွက် Model နှင့် Endpoints အသစ်များ ---
+class MenuOptionCreate(BaseModel):
+    menu_id: int
+    group_name: str
+    choice_name: str
+    additional_price: Optional[float] = 0
+
 # --- 1. Order Status ကို ပြောင်းလဲခြင်း (Confirm လုပ်ခြင်း) ---
 @router.put("/orders/{order_id}/status")
 async def update_order_status(order_id: int, payload: OrderStatusUpdate):
@@ -148,5 +155,35 @@ async def get_all_active_menus():
     try:
         response = supabase.table("menu").select("*").eq("status", "Active").execute()
         return {"success": True, "data": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- 9. မီနူး Option များ ထည့်သွင်းခြင်းနှင့် ဆွဲထုတ်ခြင်း API များ ---
+@router.post("/menu-options")
+async def add_menu_option(option: MenuOptionCreate):
+    try:
+        response = supabase.table("menu_options").insert({
+            "menu_id": option.menu_id,
+            "group_name": option.group_name,
+            "choice_name": option.choice_name,
+            "additional_price": option.additional_price
+        }).execute()
+        return {"success": True, "data": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/menu-options/{menu_id}")
+async def get_menu_options(menu_id: int):
+    try:
+        response = supabase.table("menu_options").select("*").eq("menu_id", menu_id).execute()
+        return {"success": True, "data": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/menu-options/{option_id}")
+async def delete_menu_option(option_id: int):
+    try:
+        supabase.table("menu_options").delete().eq("option_id", option_id).execute()
+        return {"success": True, "message": "Menu option deleted successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

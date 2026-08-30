@@ -45,11 +45,50 @@
             </div>
 
             <!-- ရှိပြီးသား မီနူးစာရင်းများ -->
-            <div id="menuList" class="space-y-3">
+            <div id="menuList" class="space-y-4">
                 <p class="text-gray-500 text-center py-4">မီနူးများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </div>
 
+    </div>
+
+    <!-- Menu Option ထည့်သွင်းရန် Modal -->
+    <div id="optionModal" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl p-6 max-w-md w-full space-y-4 shadow-xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-bold text-gray-800" id="modalMenuTitle">မီနူး Option ထည့်ရန်</h3>
+                <button onclick="closeOptionModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+            <input type="hidden" id="modalMenuId">
+            
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">အုပ်စုအမည် (ဥပမာ - အသားရွေးရန်၊ ခေါက်ဆွဲရွေးရန်)</label>
+                    <input type="text" id="optionGroupName" placeholder="ဥပမာ - အသားရွေးပါ" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">ရွေးချယ်စရာ အမည် (ဥပမာ - ကြက်သား၊ အကြော်စုံ)</label>
+                    <input type="text" id="optionChoiceName" placeholder="ဥပမာ - ကြက်သား" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">အပိုကျသင့်ငွေ (မရှိလျှင် 0 ထည့်ပါ)</label>
+                    <input type="number" id="optionAdditionalPrice" value="0" placeholder="0" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <!-- လက်ရှိ Option စာရင်းများပြရန် -->
+            <div class="border-t border-gray-100 pt-3">
+                <h4 class="text-xs font-semibold text-gray-600 mb-2">လက်ရှိ Option များ</h4>
+                <div id="existingOptionsList" class="space-y-2 max-h-40 overflow-y-auto">
+                    <p class="text-xs text-gray-400 text-center py-2">Option များ မရှိသေးပါ။</p>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeOptionModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg transition">ပိတ်မည်</button>
+                <button onclick="saveMenuOption()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition">Option ထည့်မည်</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -73,46 +112,45 @@
                 menuListEl.innerHTML = '';
 
                 if (menuData.success && menuData.data && menuData.data.length > 0) {
-                    menuData.data.forEach(menu => {
+                    for (const menu of menuData.data) {
                         let imageUrl = "https://via.placeholder.com/60?text=No+Image";
                         if (menu.image_url && menu.image_url !== "EMPTY") {
                             imageUrl = menu.image_url.startsWith('http') ? menu.image_url : SUPABASE_STORAGE_URL + menu.image_url;
                         }
 
-                        // Status အလိုက် badge အရောင်ပြောင်းရန်
                         const statusColor = menu.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
 
                         menuListEl.innerHTML += `
-                            <div class="flex flex-col md:flex-row justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100 gap-3">
-                                <div class="flex items-center gap-3 w-full md:w-2/5">
-                                    <img src="${imageUrl}" alt="${menu.menu_name}" class="w-12 h-12 object-cover rounded-lg border border-gray-200">
-                                    <div>
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-semibold text-gray-800 text-lg">${menu.menu_name}</span>
-                                            <span class="text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}">${menu.status || 'Active'}</span>
+                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-3">
+                                <div class="flex flex-col md:flex-row justify-between items-center gap-3">
+                                    <div class="flex items-center gap-3 w-full md:w-2/5">
+                                        <img src="${imageUrl}" alt="${menu.menu_name}" class="w-12 h-12 object-cover rounded-lg border border-gray-200">
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="font-semibold text-gray-800 text-lg">${menu.menu_name}</span>
+                                                <span class="text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}">${menu.status || 'Active'}</span>
+                                            </div>
+                                            <span class="text-gray-500 text-sm">${menu.price ? menu.price.toLocaleString() : 0} ကျပ်</span>
                                         </div>
-                                        <span class="text-gray-500 text-sm">${menu.price ? menu.price.toLocaleString() : 0} ကျပ်</span>
                                     </div>
-                                </div>
-                                <div class="flex flex-col md:flex-row items-center gap-2 w-full md:w-3/5 justify-end">
-                                    <div class="w-full md:w-auto">
-                                        <input type="number" id="price_${menu.menu_id}" value="${menu.price}" placeholder="ဈေးနှုန်း" class="border border-gray-300 rounded-lg px-3 py-1.5 w-full md:w-24 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-                                    </div>
-                                    <div class="w-full md:w-auto">
+                                    <div class="flex flex-wrap items-center gap-2 w-full md:w-3/5 justify-end">
+                                        <input type="number" id="price_${menu.menu_id}" value="${menu.price}" placeholder="ဈေးနှုန်း" class="border border-gray-300 rounded-lg px-3 py-1.5 w-24 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                                        
                                         <select id="status_${menu.menu_id}" onchange="updateMenuStatus(${menu.menu_id})" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                            <option value="Active" ${menu.status === 'Active' ? 'selected' : ''}>ရောင်းနေသည် (Active)</option>
-                                            <option value="Inactive" ${menu.status === 'Inactive' ? 'selected' : ''}>ကုန်နေသည် (Inactive)</option>
+                                            <option value="Active" ${menu.status === 'Active' ? 'selected' : ''}>ရောင်းနေသည်</option>
+                                            <option value="Inactive" ${menu.status === 'Inactive' ? 'selected' : ''}>ကုန်နေသည်</option>
                                         </select>
+
+                                        <input type="file" id="imgFile_${menu.menu_id}" accept="image/*" class="border border-gray-300 rounded-lg px-2 py-1 w-36 text-xs bg-white file:py-0.5 file:px-1 file:rounded file:border-0 file:bg-gray-100">
+                                        
+                                        <button onclick="openOptionModal(${menu.menu_id}, '${menu.menu_name}')" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-2.5 py-2 rounded-lg transition whitespace-nowrap">Option များ</button>
+                                        <button onclick="updateMenu(${menu.menu_id})" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition whitespace-nowrap">ပြင်မည်</button>
+                                        <button onclick="deleteMenu(${menu.menu_id})" class="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-3 py-2 rounded-lg transition whitespace-nowrap">ဖျက်မည်</button>
                                     </div>
-                                    <div class="w-full md:w-auto">
-                                        <input type="file" id="imgFile_${menu.menu_id}" accept="image/*" class="border border-gray-300 rounded-lg px-2 py-1 w-full md:w-36 text-xs bg-white file:py-0.5 file:px-1 file:rounded file:border-0 file:bg-gray-100">
-                                    </div>
-                                    <button onclick="updateMenu(${menu.menu_id})" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition whitespace-nowrap">ပြင်ဆင်မည်</button>
-                                    <button onclick="deleteMenu(${menu.menu_id})" class="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-3 py-2 rounded-lg transition whitespace-nowrap">ဖျက်မည်</button>
                                 </div>
                             </div>
-                      `;
-                    });
+                        `;
+                    }
                 } else {
                     menuListEl.innerHTML = `<p class="text-gray-500 text-center py-4">ဤဆိုင်တွင် မီနူးစာရင်း မရှိသေးပါ။</p>`;
                 }
@@ -190,7 +228,6 @@
             }
         }
 
-        // မီနူး Status (Active / Inactive) သီးသန့်ပြောင်းပေးမည့် Function
         async function updateMenuStatus(menuId) {
             const statusSelect = document.getElementById(`status_${menuId}`);
             const newStatus = statusSelect.value;
@@ -202,9 +239,7 @@
                     body: JSON.stringify({ status: newStatus })
                 });
                 const data = await res.json();
-                if (data.success) {
-                    loadShopData();
-                } else {
+                if (!data.success) {
                     alert("Status ပြောင်းလဲမှု မအောင်မြင်ပါ။");
                 }
             } catch (error) {
@@ -215,10 +250,7 @@
 
         async function updateMenu(menuId) {
             const priceInput = document.getElementById(`price_${menuId}`);
-            if (!priceInput) {
-                alert("အချက်အလက် ရှာမတွေ့ပါ။");
-                return;
-            }
+            if (!priceInput) return;
 
             const newPrice = priceInput.value;
             if (!newPrice) {
@@ -256,9 +288,7 @@
         }
 
         async function deleteMenu(menuId) {
-            if (!confirm("ဤမီနူးကို အမှန်တကယ် ဖျက်မှာ သေချာပါသလား?")) {
-                return;
-            }
+            if (!confirm("ဤမီနူးကို အမှန်တကယ် ဖျက်မှာ သေချာပါသလား?")) return;
 
             try {
                 const res = await fetch(`/shop-portal/menu/${menuId}`, {
@@ -273,6 +303,109 @@
                 }
             } catch (error) {
                 console.error("Delete menu error:", error);
+                alert("ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်။");
+            }
+        }
+
+        // --- Menu Options စီမံခန့်ခွဲမှုဆိုင်ရာ JavaScript များ ---
+        async function openOptionModal(menuId, menuName) {
+            document.getElementById('modalMenuId').value = menuId;
+            document.getElementById('modalMenuTitle').innerText = `${menuName} - Option များ`;
+            document.getElementById('optionGroupName').value = '';
+            document.getElementById('optionChoiceName').value = '';
+            document.getElementById('optionAdditionalPrice').value = '0';
+            
+            await loadExistingOptions(menuId);
+            document.getElementById('optionModal').classList.remove('hidden');
+        }
+
+        function closeOptionModal() {
+            document.getElementById('optionModal').classList.add('hidden');
+        }
+
+        async function loadExistingOptions(menuId) {
+            const listEl = document.getElementById('existingOptionsList');
+            listEl.innerHTML = `<p class="text-xs text-gray-400 text-center py-2">ဆွဲထုတ်နေပါသည်...</p>`;
+            
+            try {
+                const res = await fetch(`/shop-portal/menu-options/${menuId}`);
+                const data = await res.json();
+
+                if (data.success && data.data && data.data.length > 0) {
+                    listEl.innerHTML = '';
+                    data.data.forEach(opt => {
+                        listEl.innerHTML += `
+                            <div class="flex justify-between items-center bg-gray-50 px-3 py-2 rounded-lg border border-gray-200 text-xs">
+                                <div>
+                                    <span class="font-semibold text-gray-700">[${opt.group_name}]</span>
+                                    <span class="text-gray-600">${opt.choice_name}</span>
+                                    <span class="text-green-600 font-medium">(+${opt.additional_price} ကျပ်)</span>
+                                </div>
+                                <button onclick="deleteMenuOption(${opt.option_id}, ${menuId})" class="text-red-500 hover:text-red-700 font-bold px-1.5 py-0.5">ဖျက်ရန်</button>
+                            </div>
+                        `;
+                    });
+                } else {
+                    listEl.innerHTML = `<p class="text-xs text-gray-400 text-center py-2">Option များ မရှိသေးပါ။</p>`;
+                }
+            } catch (err) {
+                console.error("Load options error:", err);
+                listEl.innerHTML = `<p class="text-xs text-red-400 text-center py-2">Option များ ဆွဲထုတ်၍ မရပါ။</p>`;
+            }
+        }
+
+        async function saveMenuOption() {
+            const menuId = document.getElementById('modalMenuId').value;
+            const groupName = document.getElementById('optionGroupName').value;
+            const choiceName = document.getElementById('optionChoiceName').value;
+            const additionalPrice = document.getElementById('optionAdditionalPrice').value;
+
+            if (!groupName || !choiceName) {
+                alert("အုပ်စုအမည်နှင့် ရွေးချယ်စရာ အမည်ကို ဖြည့်ပါ။");
+                return;
+            }
+
+            try {
+                const res = await fetch('/shop-portal/menu-options', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        menu_id: parseInt(menuId),
+                        group_name: groupName,
+                        choice_name: choiceName,
+                        additional_price: parseFloat(additionalPrice || 0)
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('optionGroupName').value = '';
+                    document.getElementById('optionChoiceName').value = '';
+                    document.getElementById('optionAdditionalPrice').value = '0';
+                    await loadExistingOptions(menuId);
+                } else {
+                    alert("Option ထည့်သွင်းမှု မအောင်မြင်ပါ။");
+                }
+            } catch (err) {
+                console.error("Save option error:", err);
+                alert("ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်။");
+            }
+        }
+
+        async function deleteMenuOption(optionId, menuId) {
+            if (!confirm("ဤ Option ကို ဖျက်မှာ သေချာပါသလား?")) return;
+
+            try {
+                const res = await fetch(`/shop-portal/menu-options/${optionId}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await loadExistingOptions(menuId);
+                } else {
+                    alert("ဖျက်ဆီးမှု မအောင်မြင်ပါ။");
+                }
+            } catch (err) {
+                console.error("Delete option error:", err);
                 alert("ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်။");
             }
         }
