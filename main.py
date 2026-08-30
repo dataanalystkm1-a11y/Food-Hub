@@ -54,6 +54,15 @@ def get_all_menus():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- မီနူးတစ်ခုချင်းစီ၏ ရွေးချယ်စရာ Options များကို ဆွဲထုတ်ရန် Endpoint အသစ် ---
+@app.get("/menu-options/{menu_id}")
+def get_menu_options(menu_id: int):
+    try:
+        response = supabase.table("menu_options").select("*").eq("menu_id", menu_id).execute()
+        return response.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # --- Telegram Webhook (ဆိုင်ရှင်က Confirm ခလုတ်နှိပ်သည့်အခါ လုပ်ဆောင်ရန်) ---
 @app.post("/telegram-webhook")
 async def telegram_webhook(req: Request):
