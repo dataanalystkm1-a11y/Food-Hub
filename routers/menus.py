@@ -68,7 +68,7 @@ def delete_menu(menu_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- ၅။ ဝယ်သူသုံး App အတွက် (Active ဖြစ်နေသော မီနူးများကိုသာ ဆွဲထုတ်ရန်) ---
+# --- ၅။ ဝယ်သူသုံး App အတွက် (Prefix မပါဘဲ တိုက်ရိုက်ခေါ်လို့ရရန် သို့မဟုတ် router အပြင်ဘက် သို့ပြောင်းရန်) ---
 @router.get("/menus")
 def get_all_menus():
     try:

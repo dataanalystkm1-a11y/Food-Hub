@@ -1,5 +1,5 @@
 // API Base URL (Render Server URL ချိတ်ဆက်ရန်)
-const API_BASE_URL = "https://food-hub-8kce.onrender.com";
+const menuRes = await fetch(`${API_BASE_URL}/shop-portal/menus`);
 
 let allMenus = [];
 let allShops = [];
