@@ -54,7 +54,7 @@ def get_all_menus():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- မီနူးတစ်ခုချင်းစီ၏ ရွေးချယ်စရာ Options များကို ဆွဲထုတ်ရန် Endpoint အသစ် ---
+# --- မီနူးတစ်ခုချင်းစီ၏ ရွေးချယ်စရာ Options များကို ဆွဲထုတ်ရန် Endpoint ---
 @app.get("/menu-options/{menu_id}")
 def get_menu_options(menu_id: int):
     try:
@@ -62,6 +62,26 @@ def get_menu_options(menu_id: int):
         return response.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- ဆိုင်ရှင် Dashboard ဘက်မှ Menu Options အသစ်ထည့်ရန် Endpoint ---
+class MenuOptionCreate(BaseModel):
+    menu_id: int
+    group_name: str
+    choice_name: str
+    additional_price: Optional[float] = 0
+
+@app.post("/menu-options")
+def create_menu_option(option: MenuOptionCreate):
+    try:
+        response = supabase.table("menu_options").insert({
+            "menu_id": option.menu_id,
+            "group_name": option.group_name,
+            "choice_name": option.choice_name,
+            "additional_price": option.additional_price
+        }).execute()
+        return {"success": True, "data": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 # --- Telegram Webhook (ဆိုင်ရှင်က Confirm ခလုတ်နှိပ်သည့်အခါ လုပ်ဆောင်ရန်) ---
 @app.post("/telegram-webhook")
