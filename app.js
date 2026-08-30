@@ -1,12 +1,12 @@
 // API Base URL (Render Server URL ချိတ်ဆက်ရန်)
-const menuRes = await fetch(`${API_BASE_URL}/shop-portal/menus`);
+const API_BASE_URL = "https://food-hub-8kce.onrender.com";
 
 let allMenus = [];
 let allShops = [];
 let allOptions = [];
 let currentSelectedItem = null;
 
-// Page စတင်ဖွင့်ချိန်တွင် ဒေတာများ ဆွဲထုတ်ရန်
+// Page စတင်ဖွင့်ချိန်တွင် ဒေတာများ ဆွဲထုတ်ရန် (တစ်ကြိမ်သာ ခေါ်ဆိုရန်)
 document.addEventListener("DOMContentLoaded", () => {
     initializeApp();
 });
@@ -18,7 +18,7 @@ async function initializeApp() {
 // ဆာဗာမှ ဒေတာများ ရယူခြင်း
 async function fetchAllData() {
     try {
-        // 1. Menus ဆွဲထုတ်ရန်
+        // 1. Menus ဆွဲထုတ်ရန် (/menus endpoint ကို main.py တွင် ချိတ်ထားသည်)
         const menuRes = await fetch(`${API_BASE_URL}/menus`);
         const menuJson = await menuRes.json();
         allMenus = Array.isArray(menuJson) ? menuJson : (menuJson.data || []);
@@ -30,7 +30,7 @@ async function fetchAllData() {
 
         // 3. Options ဆွဲထုတ်ရန် (Error မတက်အောင် try-catch ခံထားသည်)
         try {
-            const optRes = await fetch(`${API_BASE_URL}/options`);
+            const optRes = await fetch(`${API_BASE_URL}/menu-options`);
             const optJson = await optRes.json();
             allOptions = Array.isArray(optJson) ? optJson : (optJson.data || []);
         } catch (err) {
@@ -62,7 +62,7 @@ async function handleAddToCartClick(originalIndex) {
 
     if (menuOptions.length === 0) {
         try {
-            const res = await fetch(`${API_BASE_URL}/options?menu_id=${item.menu_id}`);
+            const res = await fetch(`${API_BASE_URL}/menu-options/${item.menu_id}`);
             const json = await res.json();
             const fetchedData = json.data || json;
             if (Array.isArray(fetchedData)) {
@@ -80,9 +80,9 @@ async function handleAddToCartClick(originalIndex) {
     }
 }
 
-// UI Rendering Functions (လိုအပ်ပါက သင့်မူလကုဒ်အတိုင်း ဆက်သုံးနိုင်ပါသည်)
+// UI Rendering Functions
 function renderMenus(menus) {
-    const container = document.getElementById("menu-container"); // ဥပမာ ID
+    const container = document.getElementById("menu-container");
     if (!container) return;
     
     if (menus.length === 0) {
@@ -93,7 +93,7 @@ function renderMenus(menus) {
 }
 
 function renderShops(shops) {
-    const container = document.getElementById("shop-container"); // ဥပမာ ID
+    const container = document.getElementById("shop-container");
     if (!container) return;
     // ဆိုင်များ ဖော်ပြသည့် code များ...
 }
@@ -115,22 +115,3 @@ function openOptionModal(item, options) {
 function addToCartDirectly(item) {
     // တိုက်ရိုက် Cart ထဲထည့်ရန် logic
 }
-// Page စဖွင့်တာနဲ့ API ကနေ ဒေတာတွေ ဆွဲထုတ်ရန် တိုက်ရိုက်ခေါ်ဆိုခြင်း
-document.addEventListener("DOMContentLoaded", () => {
-    if (typeof fetchAllData === "function") {
-        fetchAllData();
-    } else {
-        // သင့်ရဲ့ မူလ ဒေတာဆွဲထုတ်သည့် Function နာမည်ကို ဒီမှာ ထည့်ပေးပါ
-        // ဥပမာ - loadMenus(); loadShops();
-        console.log("Fetching initial data...");
-    }
-});
-// Page စတင်ဖွင့်တာနဲ့ API ကနေ ဒေတာတွေ ဆွဲထုတ်ရန်
-document.addEventListener("DOMContentLoaded", () => {
-    if (typeof fetchAllData === "function") {
-        fetchAllData();
-    } else {
-        // သင့်ရဲ့ မူလ ဒေတာဆွဲထုတ်သည့် Function နာမည်ကို ဒီမှာ ထည့်ပေးပါ
-        console.log("Initializing WATI App data...");
-    }
-});
