@@ -459,6 +459,4 @@ window.addEventListener('DOMContentLoaded', () => {
         playTapSound();
         document.getElementById('shopModal').classList.add('hidden');
     };
-    
-    document.addEventListener('contextmenu', event => event.preventDefault());
 });
