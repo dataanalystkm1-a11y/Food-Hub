@@ -3,180 +3,281 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shop Owner Dashboard - WATI</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts - Pyidaungsu / Myanmar -->
+    <title>ဆိုင်ပိုင်ရှင် စီမံခန့်ခွဲမှု ပန်နယ်</title>
+    <!-- Tailwind CSS v4 Browser Script -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pyidaungsu:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Pyidaungsu', sans-serif; }
+        body {
+            font-family: 'Pyidaungsu', sans-serif;
+            background-color: #f3f4f6;
+        }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="p-4 md:p-8">
 
-    <!-- Top Navigation Bar -->
-    <header class="bg-white shadow-sm sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-[#B80D0D] text-white rounded-xl flex items-center justify-center font-bold text-lg">W</div>
-                <div>
-                    <h1 class="text-base font-bold text-gray-800" id="shopTitleHeader">ဆိုင်ပိုင်ရှင် ဒက်ရှ်ဘုတ်</h1>
-                    <p class="text-xs text-gray-500">Shop Management Portal</p>
-                </div>
+    <div class="max-w-4xl mx-auto space-y-6">
+       
+        <!-- Header Section -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm flex justify-between items-center">
+            <div>
+                <h1 id="shopName" class="text-2xl font-bold text-gray-800">ဆိုင်ပိုင်ရှင် စီမံခန့်ခွဲမှု ပန်နယ်</h1>
+                <p class="text-sm text-gray-500">ဆိုင်၏ မီနူးများနှင့် ဈေးနှုန်းများကို ပြင်ဆင်ရန်</p>
             </div>
-            <button onclick="logoutShop()" class="text-xs bg-gray-100 hover:bg-red-50 text-gray-700 hover:text-[#B80D0D] px-3 py-2 rounded-lg font-medium transition">
-                ထွက်ရန် (Logout)
-            </button>
-        </div>
-    </header>
-
-    <!-- Main Container -->
-    <main class="max-w-7xl mx-auto px-4 py-6 space-y-6">
-
-        <!-- Stats Overview Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                <p class="text-xs text-gray-500 font-medium">ယနေ့ အော်ဒါစုစုပေါင်း</p>
-                <h3 class="text-xl font-bold text-gray-800 mt-1" id="statTotalOrders">0</h3>
-            </div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                <p class="text-xs text-gray-500 font-medium">လက်ခံရရှိမည့် ငွေပမာဏ</p>
-                <h3 class="text-xl font-bold text-[#B80D0D] mt-1" id="statTotalRevenue">0 ကျပ်</h3>
-            </div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                <p class="text-xs text-gray-500 font-medium">ဆောင်ရွက်ဆဲ အော်ဒါများ</p>
-                <h3 class="text-xl font-bold text-yellow-600 mt-1" id="statPendingOrders">0</h3>
-            </div>
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                <p class="text-xs text-gray-500 font-medium">ပြီးစီးသွားသော အော်ဒါများ</p>
-                <h3 class="text-xl font-bold text-green-600 mt-1" id="statCompletedOrders">0</h3>
+            <div class="text-right">
+                <span id="shopStatus" class="bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">Active Shop</span>
             </div>
         </div>
 
-        <!-- Order Management Section -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="p-4 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <h2 class="text-base font-bold text-gray-800">ဝင်ရောက်လာသော အော်ဒါများစာရင်း</h2>
-                <div class="flex items-center space-x-2 w-full sm:w-auto">
-                    <select id="orderFilterStatus" onchange="filterOrders()" class="text-xs border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-[#B80D0D]">
-                        <option value="all">အော်ဒါအားလုံး</option>
-                        <option value="pending">ဆောင်ရွက်ဆဲ</option>
-                        <option value="completed">ပြီးစီးပြီ</option>
-                    </select>
-                    <button onclick="loadShopOrders()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-medium transition">
-                        Refresh
-                    </button>
+        <!-- Menu Management Section -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm space-y-6">
+            <h2 class="text-xl font-bold text-gray-800">မီနူးစာရင်း စီမံရန်</h2>
+           
+            <!-- မီနူးအသစ် ထည့်ရန် Form -->
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-4">
+                <h3 class="text-sm font-semibold text-gray-700">မီနူးအသစ် ထည့်ရန်</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <input type="text" id="newMenuName" placeholder="မီနူးအမည်" class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="number" id="newMenuPrice" placeholder="ဈေးနှုန်း (ကျပ်)" class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="file" id="newMenuImageFile" accept="image/*" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm bg-white file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:bg-blue-50 file:text-blue-700">
+                    <button id="addMenuBtn" onclick="addMenu()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition">မီနူးအသစ် ထည့်မည်</button>
                 </div>
             </div>
 
-            <!-- Orders Table / List -->
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-xs">
-                    <thead>
-                        <tr class="bg-gray-50 text-gray-600 border-b border-gray-100">
-                            <th class="p-3 font-semibold">Order ID</th>
-                            <th class="p-3 font-semibold">ဝယ်ယူသူ အမည်/ဖုန်း</th>
-                            <th class="p-3 font-semibold">လိပ်စာ</th>
-                            <th class="p-3 font-semibold">မီနူးအမည်</th>
-                            <th class="p-3 font-semibold">စုစုပေါင်း (ကျပ်)</th>
-                            <th class="p-3 font-semibold">အခြေအနေ</th>
-                            <th class="p-3 font-semibold text-center">လုပ်ဆောင်ချက်</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ordersTableBody" class="divide-y divide-gray-100 text-gray-700">
-                        <!-- Dynamic Order Rows Will Be Injected Here -->
-                        <tr>
-                            <td colspan="7" class="p-6 text-center text-gray-400">အော်ဒါ အချက်အလက်များ ရှာဖွေနေပါသည်...</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- ရှိပြီးသား မီနူးစာရင်းများ -->
+            <div id="menuList" class="space-y-3">
+                <p class="text-gray-500 text-center py-4">မီနူးများကို ဆွဲထုတ်နေပါသည်...</p>
             </div>
         </div>
 
-    </main>
+    </div>
 
-    <!-- Success Receipt Popup Function Script -->
     <script>
-        const API_BASE_URL = "https://your-backend-render-url.onrender.com"; // ကိုယ့်ဘက်စတွန် URL ထည့်ရန်
+        const urlParams = new URLSearchParams(window.location.search);
+        const shopId = urlParams.get('shop_id') || 100001;
 
-        function showSuccessReceiptPopup(orderData) {
-            let receiptModal = document.getElementById('successReceiptModal');
-            if (!receiptModal) {
-                receiptModal = document.createElement('div');
-                receiptModal.id = 'successReceiptModal';
-                receiptModal.className = 'fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4';
-                document.body.appendChild(receiptModal);
+        const SUPABASE_STORAGE_URL = 'https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/menu-images/';
+
+        async function loadShopData() {
+            try {
+                const infoRes = await fetch(`/shop-portal/info/${shopId}`);
+                const infoData = await infoRes.json();
+                if (infoData.success && infoData.data.shop_name) {
+                    document.getElementById('shopName').innerText = infoData.data.shop_name;
+                }
+
+                const menuRes = await fetch(`/shop-portal/menu/${shopId}`);
+                const menuData = await menuRes.json();
+               
+                const menuListEl = document.getElementById('menuList');
+                menuListEl.innerHTML = '';
+
+                if (menuData.success && menuData.data && menuData.data.length > 0) {
+                    menuData.data.forEach(menu => {
+                        let imageUrl = "https://via.placeholder.com/60?text=No+Image";
+                        if (menu.image_url && menu.image_url !== "EMPTY") {
+                            imageUrl = menu.image_url.startsWith('http') ? menu.image_url : SUPABASE_STORAGE_URL + menu.image_url;
+                        }
+
+                        // Status အလိုက် badge အရောင်ပြောင်းရန်
+                        const statusColor = menu.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+
+                        menuListEl.innerHTML += `
+                            <div class="flex flex-col md:flex-row justify-between items-center bg-gray-50 p-4 rounded-xl border border-gray-100 gap-3">
+                                <div class="flex items-center gap-3 w-full md:w-2/5">
+                                    <img src="${imageUrl}" alt="${menu.menu_name}" class="w-12 h-12 object-cover rounded-lg border border-gray-200">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-semibold text-gray-800 text-lg">${menu.menu_name}</span>
+                                            <span class="text-xs px-2 py-0.5 rounded-full font-medium ${statusColor}">${menu.status || 'Active'}</span>
+                                        </div>
+                                        <span class="text-gray-500 text-sm">${menu.price ? menu.price.toLocaleString() : 0} ကျပ်</span>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col md:flex-row items-center gap-2 w-full md:w-3/5 justify-end">
+                                    <div class="w-full md:w-auto">
+                                        <input type="number" id="price_${menu.menu_id}" value="${menu.price}" placeholder="ဈေးနှုန်း" class="border border-gray-300 rounded-lg px-3 py-1.5 w-full md:w-24 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                                    </div>
+                                    <div class="w-full md:w-auto">
+                                        <select id="status_${menu.menu_id}" onchange="updateMenuStatus(${menu.menu_id})" class="border border-gray-300 rounded-lg px-2 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <option value="Active" ${menu.status === 'Active' ? 'selected' : ''}>ရောင်းနေသည် (Active)</option>
+                                            <option value="Inactive" ${menu.status === 'Inactive' ? 'selected' : ''}>ကုန်နေသည် (Inactive)</option>
+                                        </select>
+                                    </div>
+                                    <div class="w-full md:w-auto">
+                                        <input type="file" id="imgFile_${menu.menu_id}" accept="image/*" class="border border-gray-300 rounded-lg px-2 py-1 w-full md:w-36 text-xs bg-white file:py-0.5 file:px-1 file:rounded file:border-0 file:bg-gray-100">
+                                    </div>
+                                    <button onclick="updateMenu(${menu.menu_id})" class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-3 py-2 rounded-lg transition whitespace-nowrap">ပြင်ဆင်မည်</button>
+                                    <button onclick="deleteMenu(${menu.menu_id})" class="bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-3 py-2 rounded-lg transition whitespace-nowrap">ဖျက်မည်</button>
+                                </div>
+                            </div>
+                      `;
+                    });
+                } else {
+                    menuListEl.innerHTML = `<p class="text-gray-500 text-center py-4">ဤဆိုင်တွင် မီနူးစာရင်း မရှိသေးပါ။</p>`;
+                }
+            } catch (error) {
+                console.error("Error loading data:", error);
+            }
+        }
+
+        async function uploadImageFile(fileInputId) {
+            const fileInput = document.getElementById(fileInputId);
+            if (!fileInput || fileInput.files.length === 0) return null;
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            formData.append("shop_id", shopId);
+
+            const res = await fetch('/shop-portal/upload-image', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            if (data.success) {
+                return data.image_path;
+            }
+            throw new Error("Image upload failed");
+        }
+
+        async function addMenu() {
+            const menuName = document.getElementById('newMenuName').value;
+            const price = document.getElementById('newMenuPrice').value;
+            const addBtn = document.getElementById('addMenuBtn');
+
+            if (!menuName || !price) {
+                alert("ကျေးဇူးပြု၍ မီနူးအမည်နှင့် ဈေးနှုန်း အပြည့်အစုံ ထည့်ပါ။");
+                return;
             }
 
-            receiptModal.innerHTML = `
-                <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl relative border-t-4 border-[#B80D0D]">
-                    <div class="text-center mb-4">
-                        <div class="w-12 h-12 bg-red-100 text-[#B80D0D] rounded-full flex items-center justify-center mx-auto mb-2 text-2xl font-bold">✓</div>
-                        <h3 class="text-lg font-bold text-gray-800">Order တင်ခြင်း အောင်မြင်ပါသည်။</h3>
-                        <p class="text-xs text-gray-500 mt-1">ကျေးဇူးတင်ပါတယ်ရှင်။ ဤအချက်အလက်များကို Screenshot ရိုက်သိမ်းထားပေးပါရန် မေတ္တာရပ်ခံအပ်ပါသည်။</p>
-                    </div>
+            try {
+                addBtn.disabled = true;
+                addBtn.innerText = "ပုံတင်နေသည် & သိမ်းနေသည်...";
 
-                    <div class="bg-gray-50 p-3 rounded-xl border border-dashed border-gray-300 text-xs text-gray-700 space-y-1.5 mb-4">
-                        <div class="flex justify-between font-bold text-[#B80D0D]">
-                            <span>Order ID:</span>
-                            <span>#${orderData.order_id}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>အမည်:</span>
-                            <span class="font-medium">${orderData.customer_name} (${orderData.customer_phone})</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>လိပ်စာ:</span>
-                            <span class="font-medium text-right max-w-[180px] line-clamp-2">${orderData.customer_address}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>ဆိုင်နာမည်:</span>
-                            <span class="font-medium">${orderData.shop_name}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>ဝယ်ယူသည့်မီနူး:</span>
-                            <span class="font-medium text-right max-w-[180px] line-clamp-2">${orderData.menu_name}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>ပို့ဆောင်မည့် Deli:</span>
-                            <span class="font-medium">${orderData.deli_name}</span>
-                        </div>
-                        <hr class="border-gray-200 my-1">
-                        <div class="flex justify-between">
-                            <span>မုန့်ဖိုးစုစုပေါင်း:</span>
-                            <span>${orderData.sub_total.toLocaleString()} ကျပ်</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>Deli ခ:</span>
-                            <span>${orderData.deli_fee.toLocaleString()} ကျပ်</span>
-                        </div>
-                        <div class="flex justify-between font-bold text-gray-900 text-sm pt-1 border-t border-gray-200">
-                            <span>ပေးချေရမည့်စုစုပေါင်း (COD):</span>
-                            <span class="text-[#B80D0D]">${orderData.total_amount.toLocaleString()} ကျပ်</span>
-                        </div>
-                    </div>
+                let imagePath = "EMPTY";
+                const fileInput = document.getElementById('newMenuImageFile');
+                if (fileInput.files.length > 0) {
+                    imagePath = await uploadImageFile('newMenuImageFile');
+                }
 
-                    <button onclick="document.getElementById('successReceiptModal').remove(); window.location.reload();" 
-                        class="w-full bg-[#B80D0D] text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 transition">
-                        ပြီးဆုံးပါပြီ (Close)
-                    </button>
-                </div>
-            `;
+                const res = await fetch('/shop-portal/menu', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        shop_id: parseInt(shopId),
+                        menu_name: menuName,
+                        price: parseFloat(price),
+                        image_url: imagePath,
+                        status: "Active"
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('newMenuName').value = '';
+                    document.getElementById('newMenuPrice').value = '';
+                    fileInput.value = '';
+                    alert(`"${menuName}" မီနူးအသစ်ကို အောင်မြင်စွာ ထည့်သွင်းပြီးပါပြီရှင်! ✨`);
+                    loadShopData();
+                } else {
+                    alert("မီနူးထည့်သွင်းမှု မအောင်မြင်ပါ။");
+                }
+            } catch (error) {
+                console.error("Add menu error:", error);
+                alert("ပုံတင်ခြင်း သို့မဟုတ် ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်။");
+            } finally {
+                addBtn.disabled = false;
+                addBtn.innerText = "မီနူးအသစ် ထည့်မည်";
+            }
         }
 
-        function loadShopOrders() {
-            // ဒေတာ ရယူရန် API ခေါ်ယူသည့် နေရာ (Backend လုပ်ဆောင်ချက်အရ ချိတ်ဆက်ရန်)
-            console.log("Loading orders...");
+        // မီနူး Status (Active / Inactive) သီးသန့်ပြောင်းပေးမည့် Function
+        async function updateMenuStatus(menuId) {
+            const statusSelect = document.getElementById(`status_${menuId}`);
+            const newStatus = statusSelect.value;
+
+            try {
+                const res = await fetch(`/shop-portal/menu/status/${menuId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    loadShopData();
+                } else {
+                    alert("Status ပြောင်းလဲမှု မအောင်မြင်ပါ။");
+                }
+            } catch (error) {
+                console.error("Update status error:", error);
+                alert("ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်။");
+            }
         }
 
-        function filterOrders() {
-            // အော်ဒါ ফিল်တာလုပ်သည့် လုပ်ဆောင်ချက်
+        async function updateMenu(menuId) {
+            const priceInput = document.getElementById(`price_${menuId}`);
+            if (!priceInput) {
+                alert("အချက်အလက် ရှာမတွေ့ပါ။");
+                return;
+            }
+
+            const newPrice = priceInput.value;
+            if (!newPrice) {
+                alert("ကျေးဇူးပြု၍ ဈေးနှုန်း ထည့်ပါ။");
+                return;
+            }
+
+            try {
+                let updatePayload = { price: parseFloat(newPrice) };
+                const fileInput = document.getElementById(`imgFile_${menuId}`);
+               
+                if (fileInput && fileInput.files.length > 0) {
+                    const newImgPath = await uploadImageFile(`imgFile_${menuId}`);
+                    if (newImgPath) {
+                        updatePayload.image_url = newImgPath;
+                    }
+                }
+
+                const res = await fetch(`/shop-portal/menu/${menuId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatePayload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("မီနူးအချက်အလက် အောင်မြင်စွာ ပြောင်းလဲပြီးပါပြီ။");
+                    loadShopData();
+                } else {
+                    alert("ပြောင်းလဲမှု မအောင်မြင်ပါ။");
+                }
+            } catch (error) {
+                console.error("Update menu error:", error);
+                alert("ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်။");
+            }
         }
 
-        function logoutShop() {
-            localStorage.clear();
-            window.location.href = 'login.html';
+        async function deleteMenu(menuId) {
+            if (!confirm("ဤမီနူးကို အမှန်တကယ် ဖျက်မှာ သေချာပါသလား?")) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/shop-portal/menu/${menuId}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert("မီနူးကို အောင်မြင်စွာ ဖျက်ပြီးပါပြီ။");
+                    loadShopData();
+                } else {
+                    alert("မီနူးဖျက်ခြင်း မအောင်မြင်ပါ။");
+                }
+            } catch (error) {
+                console.error("Delete menu error:", error);
+                alert("ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်။");
+            }
         }
+
+        loadShopData();
     </script>
 </body>
 </html>
