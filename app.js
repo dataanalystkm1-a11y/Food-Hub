@@ -5,7 +5,8 @@ let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let allMenus = [];
 let allShops = [];
 let allDelis = [];
-let currentSelectedItem = null; // Option ရွေးနေစဉ် ယာယီသိမ်းရန်
+let allOptions = []; // Database ထဲက option တွေ သိမ်းရန်
+let currentSelectedItem = null;
 
 const FALLBACK_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
 
@@ -40,48 +41,63 @@ function updateCartUI() {
 
 async function fetchLatestDataSilently() {
     try {
-        const [shopsRes, menusRes] = await Promise.all([
+        const [shopsRes, menusRes, optionsRes] = await Promise.all([
             fetch(`${API_BASE_URL}/shops`),
-            fetch(`${API_BASE_URL}/menus`)
+            fetch(`${API_BASE_URL}/menus`),
+            fetch(`${API_BASE_URL}/options`).catch(() => ({ json: () => [] }))
         ]);
         const shopsJson = await shopsRes.json();
         const menusJson = await menusRes.json();
+        const optionsJson = await optionsRes.json().catch(() => []);
 
         allShops = shopsJson.data || shopsJson;
         allMenus = menusJson.data || menusJson;
+        allOptions = optionsJson.data || optionsJson;
     } catch (err) {
         console.error("Silent Fetch Error:", err);
     }
 }
 
 // "ထည့်မည်" နှိပ်တဲ့အခါ Option ပါမပါ စစ်ဆေးရန်
-function handleAddToCartClick(originalIndex) {
+async function handleAddToCartClick(originalIndex) {
     playTapSound();
     const item = allMenus[originalIndex];
     currentSelectedItem = item;
 
-    // အကယ်၍ မီနူးတွင် Option များ (သို့မဟုတ် options စာရင်း) ပါရှိပါက Modal ကိုဖွင့်ပါ
-    if (item.options && Array.isArray(item.options) && item.options.length > 0) {
-        openOptionModal(item);
+    // Backend မှာ options endpoint မရှိသေးရင် Supabase table ထဲက menu_id နဲ့ တိုက်စစ်ရန်
+    // သို့မဟုတ် allOptions ထဲက ဒီ menu_id နဲ့ဆိုင်တဲ့ option တွေ ရှိမရှိ စစ်ဆေးခြင်း
+    let menuOptions = allOptions.filter(opt => String(opt.menu_id) === String(item.menu_id));
+
+    // အကယ်၍ allOptions ထဲမှာ မတွေ့သေးရင် API ကို သီးသန့် ထပ်ခေါ်ပြီး စစ်ဆေးနိုင်ပါတယ်
+    if (menuOptions.length === 0) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/options?menu_id=${item.menu_id}`);
+            const json = await res.json();
+            menuOptions = json.data || json;
+        } catch (e) {
+            menuOptions = [];
+        }
+    }
+
+    if (menuOptions && menuOptions.length > 0) {
+        openOptionModal(item, menuOptions);
     } else {
-        // Option မပါပါက တိုက်ရိုက် ခြင်းထဲထည့်မည်
         addToCartDirectly(item);
     }
 }
 
-function openOptionModal(item) {
+function openOptionModal(item, options) {
     document.getElementById('optionModalTitle').innerText = `${item.menu_name} - Option များ`;
     const container = document.getElementById('optionListContainer');
     
-    // ဥပမာ - Option စာရင်းများကို ဤနေရာတွင် Render ထုတ်ပေးရန်
     container.innerHTML = `
         <p class="text-xs text-gray-500 mb-2">ကျေးဇူးပြု၍ လိုအပ်သော Option ကို ရွေးချယ်ပါ -</p>
         <div class="space-y-2">
-            ${item.options.map((opt, idx) => `
-                <label class="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 p-2 rounded-lg border">
-                    <input type="radio" name="menuOption" value="${opt.option_name || opt}" ${idx === 0 ? 'checked' : ''} class="text-[#B80D0D] focus:ring-[#B80D0D]">
-                    <span>${opt.option_name || opt}</span>
-                    ${opt.price ? `<span class="ml-auto text-xs text-[#B80D0D] font-semibold">(+${opt.price} ကျပ်)</span>` : ''}
+            ${options.map((opt, idx) => `
+                <label class="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 p-2 rounded-lg border cursor-pointer hover:bg-gray-100">
+                    <input type="radio" name="menuOption" value="${opt.choice_name || opt.option_name}" ${idx === 0 ? 'checked' : ''} class="text-[#B80D0D] focus:ring-[#B80D0D]">
+                    <span>${opt.choice_name || opt.option_name}</span>
+                    ${opt.additional_price && opt.additional_price > 0 ? `<span class="ml-auto text-xs text-[#B80D0D] font-semibold">(+${opt.additional_price} ကျပ်)</span>` : ''}
                 </label>
             `).join('')}
         </div>
@@ -94,7 +110,6 @@ function confirmOptionSelection() {
     playTapSound();
     if (!currentSelectedItem) return;
 
-    // ရွေးချယ်ထားသော Option ကို ဖမ်းယူခြင်း
     const selectedInput = document.querySelector('input[name="menuOption"]:checked');
     const selectedOptionText = selectedInput ? selectedInput.value : '';
 
@@ -201,19 +216,22 @@ function clearSearch() {
 
 async function loadDashboardData() {
     try {
-        const [shopsRes, menusRes, deliRes] = await Promise.all([
+        const [shopsRes, menusRes, deliRes, optionsRes] = await Promise.all([
             fetch(`${API_BASE_URL}/shops`),
             fetch(`${API_BASE_URL}/menus`),
-            fetch(`${API_BASE_URL}/deli`)
+            fetch(`${API_BASE_URL}/deli`),
+            fetch(`${API_BASE_URL}/options`).catch(() => ({ json: () => [] }))
         ]);
 
         const shopsJson = await shopsRes.json();
         const menusJson = await menusRes.json();
         const deliJson = await deliRes.json();
+        const optionsJson = await optionsRes.json().catch(() => []);
 
         allShops = shopsJson.data || shopsJson;
         allMenus = menusJson.data || menusJson;
         allDelis = deliJson.data || deliJson;
+        allOptions = optionsJson.data || optionsJson;
 
         renderShops(allShops);
         renderMenus(allMenus);
@@ -510,5 +528,5 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('closeShopBottomBtn').onclick = () => {
         playTapSound();
         document.getElementById('shopModal').classList.add('hidden');
-    };
+    });
 });
