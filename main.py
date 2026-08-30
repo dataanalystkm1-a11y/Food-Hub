@@ -44,11 +44,12 @@ app.include_router(orders.router)
 app.include_router(menus.router)
 app.include_router(shops_portal.router)
 
-# --- Home Page အတွက် မီနူးအားလုံး ဆွဲထုတ်ရန် Endpoint (Array သက်သက် ပြန်ရန်) ---
+# --- Home Page အတွက် Active ဖြစ်သော မီနူးများကိုသာ ဆွဲထုတ်ရန် Endpoint ---
 @app.get("/menus")
 def get_all_menus():
     try:
-        response = supabase.table("menu").select("*").execute()
+        # status က Active ဖြစ်သော မီနူးများကိုသာ ဇကာတင်၍ ယူမည်
+        response = supabase.table("menu").select("*").eq("status", "Active").execute()
         return response.data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
