@@ -115,3 +115,13 @@ function openOptionModal(item, options) {
 function addToCartDirectly(item) {
     // တိုက်ရိုက် Cart ထဲထည့်ရန် logic
 }
+// Page စဖွင့်တာနဲ့ API ကနေ ဒေတာတွေ ဆွဲထုတ်ရန် တိုက်ရိုက်ခေါ်ဆိုခြင်း
+document.addEventListener("DOMContentLoaded", () => {
+    if (typeof fetchAllData === "function") {
+        fetchAllData();
+    } else {
+        // သင့်ရဲ့ မူလ ဒေတာဆွဲထုတ်သည့် Function နာမည်ကို ဒီမှာ ထည့်ပေးပါ
+        // ဥပမာ - loadMenus(); loadShops();
+        console.log("Fetching initial data...");
+    }
+});
