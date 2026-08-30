@@ -41,18 +41,23 @@ function updateCartUI() {
 
 async function fetchLatestDataSilently() {
     try {
-        const [shopsRes, menusRes, optionsRes] = await Promise.all([
+        const [shopsRes, menusRes] = await Promise.all([
             fetch(`${API_BASE_URL}/shops`),
-            fetch(`${API_BASE_URL}/menus`),
-            fetch(`${API_BASE_URL}/options`).catch(() => ({ json: () => [] }))
+            fetch(`${API_BASE_URL}/menus`)
         ]);
         const shopsJson = await shopsRes.json();
         const menusJson = await menusRes.json();
-        const optionsJson = await optionsRes.json().catch(() => []);
 
         allShops = shopsJson.data || shopsJson;
         allMenus = menusJson.data || menusJson;
-        allOptions = optionsJson.data || optionsJson;
+
+        try {
+            const optionsRes = await fetch(`${API_BASE_URL}/options`);
+            const optionsJson = await optionsRes.json();
+            allOptions = optionsJson.data || optionsJson;
+        } catch (e) {
+            allOptions = [];
+        }
     } catch (err) {
         console.error("Silent Fetch Error:", err);
     }
@@ -64,11 +69,8 @@ async function handleAddToCartClick(originalIndex) {
     const item = allMenus[originalIndex];
     currentSelectedItem = item;
 
-    // Backend မှာ options endpoint မရှိသေးရင် Supabase table ထဲက menu_id နဲ့ တိုက်စစ်ရန်
-    // သို့မဟုတ် allOptions ထဲက ဒီ menu_id နဲ့ဆိုင်တဲ့ option တွေ ရှိမရှိ စစ်ဆေးခြင်း
     let menuOptions = allOptions.filter(opt => String(opt.menu_id) === String(item.menu_id));
 
-    // အကယ်၍ allOptions ထဲမှာ မတွေ့သေးရင် API ကို သီးသန့် ထပ်ခေါ်ပြီး စစ်ဆေးနိုင်ပါတယ်
     if (menuOptions.length === 0) {
         try {
             const res = await fetch(`${API_BASE_URL}/options?menu_id=${item.menu_id}`);
@@ -216,47 +218,59 @@ function clearSearch() {
 
 async function loadDashboardData() {
     try {
-        const [shopsRes, menusRes, deliRes, optionsRes] = await Promise.all([
+        const [shopsRes, menusRes] = await Promise.all([
             fetch(`${API_BASE_URL}/shops`),
-            fetch(`${API_BASE_URL}/menus`),
-            fetch(`${API_BASE_URL}/deli`),
-            fetch(`${API_BASE_URL}/options`).catch(() => ({ json: () => [] }))
+            fetch(`${API_BASE_URL}/menus`)
         ]);
 
         const shopsJson = await shopsRes.json();
         const menusJson = await menusRes.json();
-        const deliJson = await deliRes.json();
-        const optionsJson = await optionsRes.json().catch(() => []);
 
         allShops = shopsJson.data || shopsJson;
         allMenus = menusJson.data || menusJson;
-        allDelis = deliJson.data || deliJson;
-        allOptions = optionsJson.data || optionsJson;
 
         renderShops(allShops);
         renderMenus(allMenus);
 
-        const deliContainer = document.getElementById('deliContainer');
-        const deliSelect = document.getElementById('deliSelect');
+        try {
+            const deliRes = await fetch(`${API_BASE_URL}/deli`);
+            const deliJson = await deliRes.json();
+            allDelis = deliJson.data || deliJson;
 
-        if (allDelis.length > 0) {
-            deliContainer.innerHTML = allDelis.map(deli => `
-                <div class="snap-start flex-shrink-0 w-44 bg-white p-3 rounded-xl shadow flex items-center justify-between">
-                    <div>
-                        <h4 class="font-bold text-sm text-gray-800 line-clamp-1">${deli.deli_name || 'Delivery'}</h4>
-                        <p class="text-xs text-gray-500 mt-0.5">မြို့တွင်း: ${deli.fees || deli.price || 0} ကျပ်</p>
+            const deliContainer = document.getElementById('deliContainer');
+            const deliSelect = document.getElementById('deliSelect');
+
+            if (allDelis.length > 0) {
+                deliContainer.innerHTML = allDelis.map(deli => `
+                    <div class="snap-start flex-shrink-0 w-44 bg-white p-3 rounded-xl shadow flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-800 line-clamp-1">${deli.deli_name || 'Delivery'}</h4>
+                            <p class="text-xs text-gray-500 mt-0.5">မြို့တွင်း: ${deli.fees || deli.price || 0} ကျပ်</p>
+                        </div>
+                        <span class="text-xs bg-red-100 text-[#B80D0D] px-2 py-1 rounded-md font-semibold whitespace-nowrap">Active</span>
                     </div>
-                    <span class="text-xs bg-red-100 text-[#B80D0D] px-2 py-1 rounded-md font-semibold whitespace-nowrap">Active</span>
-                </div>
-            `).join('');
+                `).join('');
 
-            deliSelect.innerHTML = `<option value="">Deli ရွေးပါ</option>` + allDelis.map(deli => `
-                <option value="${deli.deli_id}" data-price="${deli.fees || deli.price || 0}">${deli.deli_name} (မြို့တွင်း - ${deli.fees || deli.price || 0} ကျပ်)</option>
-            `).join('');
-        } else {
-            deliContainer.innerHTML = `<p class="text-gray-500 text-sm col-span-2 text-center py-4">Deli မရှိသေးပါ။</p>`;
-            deliSelect.innerHTML = `<option value="">Deli မရှိသေးပါ</option>`;
+                deliSelect.innerHTML = `<option value="">Deli ရွေးပါ</option>` + allDelis.map(deli => `
+                    <option value="${deli.deli_id}" data-price="${deli.fees || deli.price || 0}">${deli.deli_name} (မြို့တွင်း - ${deli.fees || deli.price || 0} ကျပ်)</option>
+                `).join('');
+            } else {
+                deliContainer.innerHTML = `<p class="text-gray-500 text-sm col-span-2 text-center py-4">Deli မရှိသေးပါ။</p>`;
+                deliSelect.innerHTML = `<option value="">Deli မရှိသေးပါ</option>`;
+            }
+        } catch (deliErr) {
+            console.warn("Deli fetch warning:", deliErr);
         }
+
+        try {
+            const optionsRes = await fetch(`${API_BASE_URL}/options`);
+            const optionsJson = await optionsRes.json();
+            allOptions = optionsJson.data || optionsJson;
+        } catch (optErr) {
+            console.warn("Options fetch warning:", optErr);
+            allOptions = [];
+        }
+
     } catch (err) {
         console.error("Data Fetch Error:", err);
     }
@@ -528,5 +542,5 @@ window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('closeShopBottomBtn').onclick = () => {
         playTapSound();
         document.getElementById('shopModal').classList.add('hidden');
-    });
+    };
 });
