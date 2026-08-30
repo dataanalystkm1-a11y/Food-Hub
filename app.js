@@ -37,15 +37,18 @@ function updateCartUI() {
     localStorage.setItem('cart', JSON.stringify(cart));
 }
 
-// ဒေတာအသစ်ကို အမြဲတမ်း တိုက်ရိုက်ဆွဲယူရန် ဖੰကရှင်းသီးသန့်ထုတ်ထားခြင်း (Inactive တွေပါ အကုန်ယူမည်)
+// ဒေတာအသစ်ကို အမြဲတမ်း တိုက်ရိုက်ဆွဲယူရန် ဖੰကရှင်းသီးသန့်ထုတ်ထားခြင်း
 async function fetchLatestDataSilently() {
     try {
         const [shopsRes, menusRes] = await Promise.all([
             fetch(`${API_BASE_URL}/shops`),
             fetch(`${API_BASE_URL}/menus`)
         ]);
-        allShops = await shopsRes.json() || [];
-        allMenus = await menusRes.json() || [];
+        const shopsJson = await shopsRes.json();
+        const menusJson = await menusRes.json();
+
+        allShops = shopsJson.data || shopsJson;
+        allMenus = menusJson.data || menusJson;
     } catch (err) {
         console.error("Silent Fetch Error:", err);
     }
@@ -152,9 +155,13 @@ async function loadDashboardData() {
             fetch(`${API_BASE_URL}/deli`)
         ]);
 
-        allShops = await shopsRes.json() || [];
-        allMenus = await menusRes.json() || []; // Inactive ရော Active ရော အားလုံးရယူမည်
-        allDelis = await deliRes.json() || [];
+        const shopsJson = await shopsRes.json();
+        const menusJson = await menusRes.json();
+        const deliJson = await deliRes.json();
+
+        allShops = shopsJson.data || shopsJson;
+        allMenus = menusJson.data || menusJson; // Active ဖြစ်သော မီနူးများသာ ရောက်လာမည်
+        allDelis = deliJson.data || deliJson;
 
         renderShops(allShops);
         renderMenus(allMenus);
@@ -209,7 +216,7 @@ async function openShopModal(shopName, shopId) {
             `;
         }).join('');
     } else {
-        shopMenuList.innerHTML = `<p class="text-sm text-gray-500 text-center py-8 w-full">ဤဆိုင်တွင် မီနူးစာရင်း မရှိသေးပါ။</p>`;
+        shopMenuList.innerHTML = `<p class="text-sm text-gray-500 text-center py-8 w-full">ဤဆိုင်တွင် Active ဖြစ်သော မီနူးစာရင်း မရှိသေးပါ။</p>`;
     }
     document.getElementById('shopModal').classList.remove('hidden');
 }
