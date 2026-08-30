@@ -5,7 +5,7 @@ let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let allMenus = [];
 let allShops = [];
 let allDelis = [];
-let allOptions = []; // Database ထဲက option တွေ သိမ်းရန်
+let allOptions = []; 
 let currentSelectedItem = null;
 
 const FALLBACK_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
@@ -35,7 +35,8 @@ function getShopName(shopId) {
 }
 
 function updateCartUI() {
-    document.getElementById('cartCount').innerText = cart.length;
+    const cartCountEl = document.getElementById('cartCount');
+    if (cartCountEl) cartCountEl.innerText = cart.length;
     localStorage.setItem('cart', JSON.stringify(cart));
 }
 
@@ -67,6 +68,7 @@ async function fetchLatestDataSilently() {
 async function handleAddToCartClick(originalIndex) {
     playTapSound();
     const item = allMenus[originalIndex];
+    if (!item) return;
     currentSelectedItem = item;
 
     let menuOptions = allOptions.filter(opt => String(opt.menu_id) === String(item.menu_id));
@@ -89,15 +91,17 @@ async function handleAddToCartClick(originalIndex) {
 }
 
 function openOptionModal(item, options) {
-    document.getElementById('optionModalTitle').innerText = `${item.menu_name} - Option များ`;
+    const titleEl = document.getElementById('optionModalTitle');
+    if (titleEl) titleEl.innerText = `${item.menu_name} - Option များ`;
     const container = document.getElementById('optionListContainer');
+    if (!container) return;
     
     container.innerHTML = `
         <p class="text-xs text-gray-500 mb-2">ကျေးဇူးပြု၍ လိုအပ်သော Option ကို ရွေးချယ်ပါ -</p>
         <div class="space-y-2">
             ${options.map((opt, idx) => `
                 <label class="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 p-2 rounded-lg border cursor-pointer hover:bg-gray-100">
-                    <input type="radio" name="menuOption" value="${opt.choice_name || opt.option_name}" ${idx === 0 ? 'checked' : ''} class="text-[#B80D0D] focus:ring-[#B80D0D]">
+                    <input type="radio" name="menuOption" value="${opt.choice_name || opt.option_name}" data-price="${opt.additional_price || 0}" ${idx === 0 ? 'checked' : ''} class="text-[#B80D0D] focus:ring-[#B80D0D]">
                     <span>${opt.choice_name || opt.option_name}</span>
                     ${opt.additional_price && opt.additional_price > 0 ? `<span class="ml-auto text-xs text-[#B80D0D] font-semibold">(+${opt.additional_price} ကျပ်)</span>` : ''}
                 </label>
@@ -105,7 +109,8 @@ function openOptionModal(item, options) {
         </div>
     `;
     
-    document.getElementById('optionModal').classList.remove('hidden');
+    const optionModal = document.getElementById('optionModal');
+    if (optionModal) optionModal.classList.remove('hidden');
 }
 
 function confirmOptionSelection() {
@@ -114,14 +119,22 @@ function confirmOptionSelection() {
 
     const selectedInput = document.querySelector('input[name="menuOption"]:checked');
     const selectedOptionText = selectedInput ? selectedInput.value : '';
+    
+    let additionalPrice = 0;
+    if (selectedInput && selectedInput.dataset.price) {
+        additionalPrice = Number(selectedInput.dataset.price);
+    }
 
     let itemToAdd = { ...currentSelectedItem };
+    itemToAdd.price = Number(itemToAdd.price || 0) + additionalPrice;
+
     if (selectedOptionText) {
         itemToAdd.menu_name = `${itemToAdd.menu_name} (${selectedOptionText})`;
     }
 
     addToCartDirectly(itemToAdd);
-    document.getElementById('optionModal').classList.add('hidden');
+    const optionModal = document.getElementById('optionModal');
+    if (optionModal) optionModal.classList.add('hidden');
 }
 
 function addToCartDirectly(item) {
@@ -144,6 +157,7 @@ function dragStart(event, index) {
 
 function renderMenus(menusToRender) {
     const menuContainer = document.getElementById('menuContainer');
+    if (!menuContainer) return;
     if (menusToRender.length > 0) {
         menuContainer.innerHTML = menusToRender.map((item) => {
             const originalIndex = allMenus.findIndex(m => m.menu_id === item.menu_id);
@@ -171,6 +185,7 @@ function renderMenus(menusToRender) {
 
 function renderShops(shopsToRender) {
     const shopContainer = document.getElementById('shopContainer');
+    if (!shopContainer) return;
     if (shopsToRender.length > 0) {
         shopContainer.innerHTML = shopsToRender.map((shop) => {
             const shopImageUrl = getDriveDirectUrl(shop.shop_image_url);
@@ -190,9 +205,11 @@ function renderShops(shopsToRender) {
 }
 
 function handleSearch() {
-    const query = document.getElementById('searchInput').value.trim().toLowerCase();
+    const searchInput = document.getElementById('searchInput');
     const clearBtn = document.getElementById('clearSearchBtn');
+    if (!searchInput || !clearBtn) return;
 
+    const query = searchInput.value.trim().toLowerCase();
     if (query !== "") clearBtn.classList.remove('hidden');
     else clearBtn.classList.add('hidden');
 
@@ -210,8 +227,10 @@ function handleSearch() {
 
 function clearSearch() {
     playTapSound();
-    document.getElementById('searchInput').value = '';
-    document.getElementById('clearSearchBtn').classList.add('hidden');
+    const searchInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('clearSearchBtn');
+    if (searchInput) searchInput.value = '';
+    if (clearBtn) clearBtn.classList.add('hidden');
     renderMenus(allMenus);
     renderShops(allShops);
 }
@@ -241,22 +260,26 @@ async function loadDashboardData() {
             const deliSelect = document.getElementById('deliSelect');
 
             if (allDelis.length > 0) {
-                deliContainer.innerHTML = allDelis.map(deli => `
-                    <div class="snap-start flex-shrink-0 w-44 bg-white p-3 rounded-xl shadow flex items-center justify-between">
-                        <div>
-                            <h4 class="font-bold text-sm text-gray-800 line-clamp-1">${deli.deli_name || 'Delivery'}</h4>
-                            <p class="text-xs text-gray-500 mt-0.5">မြို့တွင်း: ${deli.fees || deli.price || 0} ကျပ်</p>
+                if (deliContainer) {
+                    deliContainer.innerHTML = allDelis.map(deli => `
+                        <div class="snap-start flex-shrink-0 w-44 bg-white p-3 rounded-xl shadow flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-sm text-gray-800 line-clamp-1">${deli.deli_name || 'Delivery'}</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">မြို့တွင်း: ${deli.fees || deli.price || 0} ကျပ်</p>
+                            </div>
+                            <span class="text-xs bg-red-100 text-[#B80D0D] px-2 py-1 rounded-md font-semibold whitespace-nowrap">Active</span>
                         </div>
-                        <span class="text-xs bg-red-100 text-[#B80D0D] px-2 py-1 rounded-md font-semibold whitespace-nowrap">Active</span>
-                    </div>
-                `).join('');
+                    `).join('');
+                }
 
-                deliSelect.innerHTML = `<option value="">Deli ရွေးပါ</option>` + allDelis.map(deli => `
-                    <option value="${deli.deli_id}" data-price="${deli.fees || deli.price || 0}">${deli.deli_name} (မြို့တွင်း - ${deli.fees || deli.price || 0} ကျပ်)</option>
-                `).join('');
+                if (deliSelect) {
+                    deliSelect.innerHTML = `<option value="">Deli ရွေးပါ</option>` + allDelis.map(deli => `
+                        <option value="${deli.deli_id}" data-price="${deli.fees || deli.price || 0}">${deli.deli_name} (မြို့တွင်း - ${deli.fees || deli.price || 0} ကျပ်)</option>
+                    `).join('');
+                }
             } else {
-                deliContainer.innerHTML = `<p class="text-gray-500 text-sm col-span-2 text-center py-4">Deli မရှိသေးပါ။</p>`;
-                deliSelect.innerHTML = `<option value="">Deli မရှိသေးပါ</option>`;
+                if (deliContainer) deliContainer.innerHTML = `<p class="text-gray-500 text-sm col-span-2 text-center py-4">Deli မရှိသေးပါ။</p>`;
+                if (deliSelect) deliSelect.innerHTML = `<option value="">Deli မရှိသေးပါ</option>`;
             }
         } catch (deliErr) {
             console.warn("Deli fetch warning:", deliErr);
@@ -280,8 +303,12 @@ async function openShopModal(shopName, shopId) {
     playTapSound();
     await fetchLatestDataSilently(); 
     
-    document.getElementById('shopModalTitle').innerText = shopName;
+    const shopModalTitle = document.getElementById('shopModalTitle');
+    if (shopModalTitle) shopModalTitle.innerText = shopName;
+
     const shopMenuList = document.getElementById('shopMenuList');
+    if (!shopMenuList) return;
+
     const filteredMenus = allMenus.filter(m => String(m.shop_id) === String(shopId));
 
     if (filteredMenus.length > 0) {
@@ -302,7 +329,8 @@ async function openShopModal(shopName, shopId) {
     } else {
         shopMenuList.innerHTML = `<p class="text-sm text-gray-500 text-center py-8 w-full">ဤဆိုင်တွင် Active ဖြစ်သော မီနူးစာရင်း မရှိသေးပါ။</p>`;
     }
-    document.getElementById('shopModal').classList.remove('hidden');
+    const shopModal = document.getElementById('shopModal');
+    if (shopModal) shopModal.classList.remove('hidden');
 }
 
 async function openCartModal() {
@@ -311,12 +339,15 @@ async function openCartModal() {
 
     const list = document.getElementById('cartList');
     const subTotalAmount = document.getElementById('subTotalAmount');
+    if (!list || !subTotalAmount) return;
 
     if (cart.length === 0) {
         list.innerHTML = `<p class="text-sm text-gray-500 text-center py-4">မုန့်ခြင်းထဲတွင် မီနူးများ မရှိသေးပါ။</p>`;
         subTotalAmount.innerText = "0 ကျပ်";
-        document.getElementById('deliFeeAmount').innerText = "0 ကျပ်";
-        document.getElementById('totalAmount').innerText = "0 ကျပ်";
+        const deliFeeAmount = document.getElementById('deliFeeAmount');
+        const totalAmount = document.getElementById('totalAmount');
+        if (deliFeeAmount) deliFeeAmount.innerText = "0 ကျပ်";
+        if (totalAmount) totalAmount.innerText = "0 ကျပ်";
     } else {
         let subTotal = 0;
         list.innerHTML = cart.map((item, index) => {
@@ -340,33 +371,49 @@ async function openCartModal() {
     }
     
     const lastCust = JSON.parse(localStorage.getItem('lastCustInfo')) || {};
-    if (lastCust.name) document.getElementById('custName').value = lastCust.name;
-    if (lastCust.phone) document.getElementById('custPhone').value = lastCust.phone;
-    if (lastCust.address) document.getElementById('custAddress').value = lastCust.address;
-    if (lastCust.remark) document.getElementById('custRemark').value = lastCust.remark;
+    const custName = document.getElementById('custName');
+    const custPhone = document.getElementById('custPhone');
+    const custAddress = document.getElementById('custAddress');
+    const custRemark = document.getElementById('custRemark');
 
-    document.getElementById('cartModal').classList.remove('hidden');
+    if (custName && lastCust.name) custName.value = lastCust.name;
+    if (custPhone && lastCust.phone) custPhone.value = lastCust.phone;
+    if (custAddress && lastCust.address) custAddress.value = lastCust.address;
+    if (custRemark && lastCust.remark) custRemark.value = lastCust.remark;
+
+    const cartModal = document.getElementById('cartModal');
+    if (cartModal) cartModal.classList.remove('hidden');
 }
 
 function updateTotalWithDeli() {
     let subTotal = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
     const deliSelect = document.getElementById('deliSelect');
+    if (!deliSelect) return;
     const selectedOption = deliSelect.options[deliSelect.selectedIndex];
     let deliFee = selectedOption && selectedOption.dataset.price ? Number(selectedOption.dataset.price) : 0;
 
-    document.getElementById('deliFeeAmount').innerText = deliFee.toLocaleString() + " ကျပ် (မြို့တွင်း)";
-    document.getElementById('totalAmount').innerText = (subTotal + deliFee).toLocaleString() + " ကျပ် (ခန့်မှန်း)";
+    const deliFeeAmount = document.getElementById('deliFeeAmount');
+    const totalAmount = document.getElementById('totalAmount');
+    if (deliFeeAmount) deliFeeAmount.innerText = deliFee.toLocaleString() + " ကျပ် (မြို့တွင်း)";
+    if (totalAmount) totalAmount.innerText = (subTotal + deliFee).toLocaleString() + " ကျပ် (ခန့်မှန်း)";
 }
 
 async function checkoutOrder() {
     playTapSound();
-    const name = document.getElementById('custName').value.trim();
-    const phone = document.getElementById('custPhone').value.trim();
-    const address = document.getElementById('custAddress').value.trim();
-    const remark = document.getElementById('custRemark') ? document.getElementById('custRemark').value.trim() : '';
+    const nameEl = document.getElementById('custName');
+    const phoneEl = document.getElementById('custPhone');
+    const addressEl = document.getElementById('custAddress');
+    const remarkEl = document.getElementById('custRemark');
     const deliSelect = document.getElementById('deliSelect');
-    const deliId = deliSelect.value;
     const submitBtn = document.getElementById('submitOrderBtn');
+
+    if (!nameEl || !phoneEl || !addressEl || !deliSelect || !submitBtn) return;
+
+    const name = nameEl.value.trim();
+    const phone = phoneEl.value.trim();
+    const address = addressEl.value.trim();
+    const remark = remarkEl ? remarkEl.value.trim() : '';
+    const deliId = deliSelect.value;
 
     if (cart.length === 0 || !name || !phone || !address || !deliId) {
         alert("အချက်အလက်များကို အပြည့်အစုံ ဖြည့်ပေးပါရှင်။");
@@ -417,7 +464,8 @@ async function checkoutOrder() {
 
         cart = [];
         updateCartUI();
-        document.getElementById('cartModal').classList.add('hidden');
+        const cartModal = document.getElementById('cartModal');
+        if (cartModal) cartModal.classList.add('hidden');
 
         showSuccessReceiptPopup({
             order_id: newOrderId,
@@ -516,31 +564,50 @@ window.addEventListener('DOMContentLoaded', () => {
     loadDashboardData();
     updateCartUI();
 
-    document.getElementById('searchInput').addEventListener('input', handleSearch);
-    document.getElementById('clearSearchBtn').onclick = clearSearch;
-
-    document.getElementById('cartBtn').onclick = openCartModal;
-    document.getElementById('closeCartBtn').onclick = () => {
-        playTapSound();
-        document.getElementById('cartModal').classList.add('hidden');
-    };
-    document.getElementById('deliSelect').onchange = updateTotalWithDeli;
-    document.getElementById('submitOrderBtn').onclick = checkoutOrder;
-
+    const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
     const cartBtn = document.getElementById('cartBtn');
-    cartBtn.addEventListener('dragover', (e) => e.preventDefault());
-    cartBtn.addEventListener('drop', (e) => {
-        e.preventDefault();
-        const index = e.dataTransfer.getData('text/plain');
-        if (index !== "" && allMenus[index]) handleAddToCartClick(index);
-    });
+    const closeCartBtn = document.getElementById('closeCartBtn');
+    const deliSelect = document.getElementById('deliSelect');
+    const submitOrderBtn = document.getElementById('submitOrderBtn');
+    const closeShopBtn = document.getElementById('closeShopBtn');
+    const closeShopBottomBtn = document.getElementById('closeShopBottomBtn');
 
-    document.getElementById('closeShopBtn').onclick = () => {
-        playTapSound();
-        document.getElementById('shopModal').classList.add('hidden');
-    };
-    document.getElementById('closeShopBottomBtn').onclick = () => {
-        playTapSound();
-        document.getElementById('shopModal').classList.add('hidden');
-    };
+    if (searchInput) searchInput.addEventListener('input', handleSearch);
+    if (clearSearchBtn) clearSearchBtn.onclick = clearSearch;
+
+    if (cartBtn) cartBtn.onclick = openCartModal;
+    if (closeCartBtn) {
+        closeCartBtn.onclick = () => {
+            playTapSound();
+            const cartModal = document.getElementById('cartModal');
+            if (cartModal) cartModal.classList.add('hidden');
+        };
+    }
+    if (deliSelect) deliSelect.onchange = updateTotalWithDeli;
+    if (submitOrderBtn) submitOrderBtn.onclick = checkoutOrder;
+
+    if (cartBtn) {
+        cartBtn.addEventListener('dragover', (e) => e.preventDefault());
+        cartBtn.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const index = e.dataTransfer.getData('text/plain');
+            if (index !== "" && allMenus[index]) handleAddToCartClick(index);
+        });
+    }
+
+    if (closeShopBtn) {
+        closeShopBtn.onclick = () => {
+            playTapSound();
+            const shopModal = document.getElementById('shopModal');
+            if (shopModal) shopModal.classList.add('hidden');
+        };
+    }
+    if (closeShopBottomBtn) {
+        closeShopBottomBtn.onclick = () => {
+            playTapSound();
+            const shopModal = document.getElementById('shopModal');
+            if (shopModal) shopModal.classList.add('hidden');
+        };
+    }
 });
