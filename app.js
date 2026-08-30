@@ -5,6 +5,7 @@ let cart = JSON.parse(localStorage.getItem('cart')) || [];
 let allMenus = [];
 let allShops = [];
 let allDelis = [];
+let currentSelectedItem = null; // Option ရွေးနေစဉ် ယာယီသိမ်းရန်
 
 const FALLBACK_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 24 24' fill='none' stroke='%23cbd5e1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='18' height='18' rx='2' ry='2'/><circle cx='8.5' cy='8.5' r='1.5'/><polyline points='21 15 16 10 5 21'/></svg>";
 
@@ -37,7 +38,6 @@ function updateCartUI() {
     localStorage.setItem('cart', JSON.stringify(cart));
 }
 
-// ဒေတာအသစ်ကို အမြဲတမ်း တိုက်ရိုက်ဆွဲယူရန် ဖੰကရှင်းသီးသန့်ထုတ်ထားခြင်း
 async function fetchLatestDataSilently() {
     try {
         const [shopsRes, menusRes] = await Promise.all([
@@ -54,8 +54,60 @@ async function fetchLatestDataSilently() {
     }
 }
 
-function addToCart(item) {
+// "ထည့်မည်" နှိပ်တဲ့အခါ Option ပါမပါ စစ်ဆေးရန်
+function handleAddToCartClick(originalIndex) {
     playTapSound();
+    const item = allMenus[originalIndex];
+    currentSelectedItem = item;
+
+    // အကယ်၍ မီနူးတွင် Option များ (သို့မဟုတ် options စာရင်း) ပါရှိပါက Modal ကိုဖွင့်ပါ
+    if (item.options && Array.isArray(item.options) && item.options.length > 0) {
+        openOptionModal(item);
+    } else {
+        // Option မပါပါက တိုက်ရိုက် ခြင်းထဲထည့်မည်
+        addToCartDirectly(item);
+    }
+}
+
+function openOptionModal(item) {
+    document.getElementById('optionModalTitle').innerText = `${item.menu_name} - Option များ`;
+    const container = document.getElementById('optionListContainer');
+    
+    // ဥပမာ - Option စာရင်းများကို ဤနေရာတွင် Render ထုတ်ပေးရန်
+    container.innerHTML = `
+        <p class="text-xs text-gray-500 mb-2">ကျေးဇူးပြု၍ လိုအပ်သော Option ကို ရွေးချယ်ပါ -</p>
+        <div class="space-y-2">
+            ${item.options.map((opt, idx) => `
+                <label class="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 p-2 rounded-lg border">
+                    <input type="radio" name="menuOption" value="${opt.option_name || opt}" ${idx === 0 ? 'checked' : ''} class="text-[#B80D0D] focus:ring-[#B80D0D]">
+                    <span>${opt.option_name || opt}</span>
+                    ${opt.price ? `<span class="ml-auto text-xs text-[#B80D0D] font-semibold">(+${opt.price} ကျပ်)</span>` : ''}
+                </label>
+            `).join('')}
+        </div>
+    `;
+    
+    document.getElementById('optionModal').classList.remove('hidden');
+}
+
+function confirmOptionSelection() {
+    playTapSound();
+    if (!currentSelectedItem) return;
+
+    // ရွေးချယ်ထားသော Option ကို ဖမ်းယူခြင်း
+    const selectedInput = document.querySelector('input[name="menuOption"]:checked');
+    const selectedOptionText = selectedInput ? selectedInput.value : '';
+
+    let itemToAdd = { ...currentSelectedItem };
+    if (selectedOptionText) {
+        itemToAdd.menu_name = `${itemToAdd.menu_name} (${selectedOptionText})`;
+    }
+
+    addToCartDirectly(itemToAdd);
+    document.getElementById('optionModal').classList.add('hidden');
+}
+
+function addToCartDirectly(item) {
     item.shop_name = getShopName(item.shop_id);
     cart.push(item);
     updateCartUI();
@@ -90,7 +142,7 @@ function renderMenus(menusToRender) {
                     </div>
                     <div class="mt-2 flex items-center justify-between">
                         <span class="text-[#B80D0D] font-bold text-xs whitespace-nowrap">${item.price || 0} ကျပ်</span>
-                        <button onclick='addToCart(allMenus[${originalIndex}])' class="bg-[#B80D0D] text-white text-xs px-2.5 py-1 rounded-lg hover:bg-red-700 font-medium">ထည့်မည်</button>
+                        <button onclick='handleAddToCartClick(${originalIndex})' class="bg-[#B80D0D] text-white text-xs px-2.5 py-1 rounded-lg hover:bg-red-700 font-medium">ထည့်မည်</button>
                     </div>
                 </div>
             `;
@@ -211,7 +263,7 @@ async function openShopModal(shopName, shopId) {
                         <h4 class="font-bold text-sm text-gray-800 line-clamp-1">${item.menu_name}</h4>
                         <p class="text-xs text-[#B80D0D] font-bold mt-1 whitespace-nowrap">${item.price || 0} ကျပ်</p>
                     </div>
-                    <button onclick='addToCart(allMenus[${originalIndex}])' class="w-full bg-[#B80D0D] text-white text-xs py-1.5 rounded-lg mt-3 font-medium hover:bg-red-700 whitespace-nowrap">ထည့်မည်</button>
+                    <button onclick='handleAddToCartClick(${originalIndex})' class="w-full bg-[#B80D0D] text-white text-xs py-1.5 rounded-lg mt-3 font-medium hover:bg-red-700 whitespace-nowrap">ထည့်မည်</button>
                 </div>
             `;
         }).join('');
@@ -448,7 +500,7 @@ window.addEventListener('DOMContentLoaded', () => {
     cartBtn.addEventListener('drop', (e) => {
         e.preventDefault();
         const index = e.dataTransfer.getData('text/plain');
-        if (index !== "" && allMenus[index]) addToCart(allMenus[index]);
+        if (index !== "" && allMenus[index]) handleAddToCartClick(index);
     });
 
     document.getElementById('closeShopBtn').onclick = () => {
