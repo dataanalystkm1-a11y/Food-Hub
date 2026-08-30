@@ -125,3 +125,12 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Fetching initial data...");
     }
 });
+// Page စတင်ဖွင့်တာနဲ့ API ကနေ ဒေတာတွေ ဆွဲထုတ်ရန်
+document.addEventListener("DOMContentLoaded", () => {
+    if (typeof fetchAllData === "function") {
+        fetchAllData();
+    } else {
+        // သင့်ရဲ့ မူလ ဒေတာဆွဲထုတ်သည့် Function နာမည်ကို ဒီမှာ ထည့်ပေးပါ
+        console.log("Initializing WATI App data...");
+    }
+});
