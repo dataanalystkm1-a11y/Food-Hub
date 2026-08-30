@@ -88,7 +88,7 @@ async def update_menu_status(menu_id: int, payload: MenuStatusUpdate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# --- 4. ဆိုင်တစ်ဆိုင်ချင်းစီ၏ မီနူးစာရင်းအားလုံးကို (Active နှင့် Inactive မခွဲဘဲ) ကြည့်ရှုရန် ---
+# --- 4. ဆိုင်တစ်ဆိုင်ချင်းစီ၏ မီနူးစာရင်းအားလုံးကို (Active နှင့် Inactive ပါ အကုန်) ဆိုင်ရှင် Dashboard အတွက် ကြည့်ရှုရန် ---
 @router.get("/menu/{shop_id}")
 async def get_shop_menus(shop_id: int):
     try:
@@ -140,4 +140,13 @@ async def upload_shop_image(file: UploadFile = File(...), shop_id: int = Form(..
         }
     except Exception as e:
         print(f"Upload error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- 8. ဝယ်သူသုံး App အတွက် Active ဖြစ်နေသော မီနူးများကိုသာ ဆွဲထုတ်ရန် ---
+@router.get("/menus")
+async def get_all_active_menus():
+    try:
+        response = supabase.table("menu").select("*").eq("status", "Active").execute()
+        return {"success": True, "data": response.data}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
