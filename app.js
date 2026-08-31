@@ -18,7 +18,7 @@ async function initializeApp() {
 // ဆာဗာမှ ဒေတာများ ရယူခြင်း
 async function fetchAllData() {
     try {
-        // 1. Menus ဆွဲထုတ်ရန် (Backend router prefix /shop-portal နှင့် ကိုက်ညီစေရန် ပြင်ထားသည်)
+        // 1. Menus ဆွဲထုတ်ရန်
         const menuRes = await fetch(`${API_BASE_URL}/menus`);
         const menuJson = await menuRes.json();
         allMenus = Array.isArray(menuJson) ? menuJson : (menuJson.data || []);
@@ -28,7 +28,7 @@ async function fetchAllData() {
         const shopJson = await shopRes.json();
         allShops = Array.isArray(shopJson) ? shopJson : (shopJson.data || []);
 
-        // 3. Options ဆွဲထုတ်ရန် (Error မတက်အောင် try-catch ခံထားသည်)
+        // 3. Options ဆွဲထုတ်ရန်
         try {
             const optRes = await fetch(`${API_BASE_URL}/menu-options`);
             const optJson = await optRes.json();
@@ -54,7 +54,6 @@ async function handleAddToCartClick(originalIndex) {
     if (!item) return;
     currentSelectedItem = item;
 
-    // allOptions သည် Array ဟုတ်မဟုတ် သေချာစစ်ဆေးပါ
     let menuOptions = [];
     if (Array.isArray(allOptions) && allOptions.length > 0) {
         menuOptions = allOptions.filter(opt => String(opt.menu_id) === String(item.menu_id));
@@ -80,22 +79,49 @@ async function handleAddToCartClick(originalIndex) {
     }
 }
 
-// UI Rendering Functions
+// UI Rendering Functions (မီနူးများကို Screen ပေါ်တွင် ပုံဖော်ပေးခြင်း)
 function renderMenus(menus) {
     const container = document.getElementById("menu-container");
     if (!container) return;
     
-    if (menus.length === 0) {
-        container.innerHTML = "<p>ဒေတာ မရှိသေးပါ</p>";
+    if (!menus || menus.length === 0) {
+        container.innerHTML = "<p class='text-gray-500 p-4'>မီနူး ဒေတာ မရှိသေးပါ။</p>";
         return;
     }
-    // မီနူးများ ဖော်ပြသည့် code များ...
+
+    container.innerHTML = menus.map((item, index) => `
+        <div class="bg-white rounded-xl shadow-md overflow-hidden p-4 flex flex-col justify-between">
+            <div>
+                <img src="${item.image_url || 'https://via.placeholder.com/150'}" alt="${item.name || item.title}" class="w-full h-32 object-cover rounded-lg mb-3">
+                <h3 class="font-bold text-lg text-gray-800">${item.name || item.title}</h3>
+                <p class="text-red-500 font-semibold mt-1">${item.price} ကျပ်</p>
+            </div>
+            <button onclick="handleAddToCartClick(${index})" class="mt-4 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition font-medium w-full">
+                ထည့်မည် 🛒
+            </button>
+        </div>
+    `).join("");
 }
 
+// ဆိုင်များကို Screen ပေါ်တွင် ပုံဖော်ပေးခြင်း
 function renderShops(shops) {
     const container = document.getElementById("shop-container");
     if (!container) return;
-    // ဆိုင်များ ဖော်ပြသည့် code များ...
+    
+    if (!shops || shops.length === 0) {
+        container.innerHTML = "<p class='text-gray-500 p-4'>ဆိုင် ဒေတာ မရှိသေးပါ။</p>";
+        return;
+    }
+
+    container.innerHTML = shops.map(shop => `
+        <div class="bg-white rounded-xl shadow-md p-4 flex items-center space-x-4">
+            <img src="${shop.image_url || 'https://via.placeholder.com/80'}" alt="${shop.name}" class="w-16 h-16 object-cover rounded-full">
+            <div>
+                <h3 class="font-bold text-md text-gray-800">${shop.name}</h3>
+                <p class="text-sm text-gray-500">${shop.address || 'မြေနေရာ မရှိသေးပါ'}</p>
+            </div>
+        </div>
+    `).join("");
 }
 
 function showErrorMessage() {
@@ -109,9 +135,9 @@ function playTapSound() {
 }
 
 function openOptionModal(item, options) {
-    // Modal ဖွင့်ရန် logic
+    console.log("Opening option modal for:", item.name, options);
 }
 
 function addToCartDirectly(item) {
-    // တိုက်ရိုက် Cart ထဲထည့်ရန် logic
+    console.log("Added to cart directly:", item.name);
 }
