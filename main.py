@@ -22,8 +22,8 @@ app.add_middleware(
 )
 
 # --- Static Files & Frontend Mount ---
-# CSS နှင့် JS ဖိုင်များကို /static လမ်းကြောင်းအောက်တွင် သီးသန့် mount လုပ်ခြင်း
-app.mount("/static", StaticFiles(directory="."), name="static")
+# static folder ကို တိကျစွာ mount လုပ်ခြင်း (static/app.js နှင့် static/style.css ကို ဖွင့်ပေးရန်)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # --- Telegram Bot Configuration ---
 TELEGRAM_BOT_TOKEN = "8453664740:AAGiLC4MPpz7Ce_B2-UuZWHyK2TKA35Mj0Q"
