@@ -18,8 +18,8 @@ async function initializeApp() {
 // ဆာဗာမှ ဒေတာများ ရယူခြင်း
 async function fetchAllData() {
     try {
-        // 1. Menus ဆွဲထုတ်ရန် (/menus endpoint ကို main.py တွင် ချိတ်ထားသည်)
-        const menuRes = await fetch(`${API_BASE_URL}/menus`);
+        // 1. Menus ဆွဲထုတ်ရန် (Backend router prefix /shop-portal နှင့် ကိုက်ညီစေရန် ပြင်ထားသည်)
+        const menuRes = await fetch(`${API_BASE_URL}/shop-portal/menus`);
         const menuJson = await menuRes.json();
         allMenus = Array.isArray(menuJson) ? menuJson : (menuJson.data || []);
 
