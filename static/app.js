@@ -129,11 +129,11 @@ function setupEventListeners() {
 // ရှာဖွေရန် (Search filtering)
 function filterMenusAndShops(keyword) {
     const filteredMenus = allMenus.filter(item => 
-        (item.name || item.title || "").toLowerCase().includes(keyword) ||
-        (item.shop_name || "").toLowerCase().includes(keyword)
+        (item.name || item.title || item.menu_name || "").toLowerCase().includes(keyword) ||
+        (item.shop_name || item.shop || "").toLowerCase().includes(keyword)
     );
     const filteredShops = allShops.filter(shop => 
-        (shop.name || "").toLowerCase().includes(keyword)
+        (shop.name || shop.shop_name || "").toLowerCase().includes(keyword)
     );
     renderMenus(filteredMenus);
     renderShops(filteredShops);
@@ -146,14 +146,15 @@ async function handleAddToCartClick(originalIndex) {
     if (!item) return;
     currentSelectedItem = item;
 
+    const targetMenuId = item.menu_id || item.id;
     let menuOptions = [];
     if (Array.isArray(allOptions) && allOptions.length > 0) {
-        menuOptions = allOptions.filter(opt => String(opt.menu_id) === String(item.menu_id));
+        menuOptions = allOptions.filter(opt => String(opt.menu_id) === String(targetMenuId));
     }
 
     if (menuOptions.length === 0) {
         try {
-            const res = await fetch(`${API_BASE_URL}/menu-options/${item.menu_id}`);
+            const res = await fetch(`${API_BASE_URL}/menu-options/${targetMenuId}`);
             const json = await res.json();
             const fetchedData = json.data || json;
             if (Array.isArray(fetchedData)) {
@@ -181,19 +182,26 @@ function renderMenus(menus) {
         return;
     }
 
-    container.innerHTML = menus.map((item, index) => `
-        <div class="min-w-[160px] max-w-[160px] bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col justify-between snap-start flex-shrink-0 p-2.5">
-            <div>
-                <img src="${item.image_url || 'https://via.placeholder.com/150'}" alt="${item.name || item.title}" class="w-full h-28 object-cover rounded-xl mb-2">
-                <h3 class="font-bold text-sm text-gray-800 truncate">${item.name || item.title}</h3>
-                <p class="text-xs text-gray-500 truncate mb-1">${item.shop_name || ''}</p>
-                <p class="text-[#B80D0D] font-extrabold text-sm">${item.price} ကျပ်</p>
+    container.innerHTML = menus.map((item, index) => {
+        const itemName = item.name || item.title || item.menu_name || "အမည်မရှိ";
+        const itemShop = item.shop_name || item.shop || "";
+        const itemPrice = item.price || 0;
+        const itemImg = item.image_url || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+
+        return `
+            <div class="min-w-[160px] max-w-[160px] bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col justify-between snap-start flex-shrink-0 p-2.5">
+                <div>
+                    <img src="${itemImg}" alt="${itemName}" class="w-full h-28 object-cover rounded-xl mb-2" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c'">
+                    <h3 class="font-bold text-sm text-gray-800 truncate">${itemName}</h3>
+                    <p class="text-xs text-gray-500 truncate mb-1">${itemShop}</p>
+                    <p class="text-[#B80D0D] font-extrabold text-sm">${itemPrice} ကျပ်</p>
+                </div>
+                <button onclick="handleAddToCartClick(${index})" class="mt-2.5 bg-[#B80D0D] hover:bg-red-700 text-white py-1.5 px-3 rounded-xl text-xs font-semibold transition w-full">
+                    ထည့်မည် 🛒
+                </button>
             </div>
-            <button onclick="handleAddToCartClick(${index})" class="mt-2.5 bg-[#B80D0D] hover:bg-red-700 text-white py-1.5 px-3 rounded-xl text-xs font-semibold transition w-full">
-                ထည့်မည် 🛒
-            </button>
-        </div>
-    `).join("");
+        `;
+    }).join("");
 }
 
 // ဆိုင်များကို Screen ပေါ်တွင် ပုံဖော်ပေးခြင်း
@@ -206,13 +214,19 @@ function renderShops(shops) {
         return;
     }
 
-    container.innerHTML = shops.map((shop) => `
-        <div onclick="openShopDetail('${shop.shop_id || shop.id}', '${shop.name}')" class="min-w-[150px] max-w-[150px] bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col items-center text-center snap-start flex-shrink-0 cursor-pointer hover:shadow-md transition">
-            <img src="${shop.image_url || 'https://via.placeholder.com/80'}" alt="${shop.name}" class="w-16 h-16 object-cover rounded-full mb-2 shadow-sm">
-            <h3 class="font-bold text-xs text-gray-800 truncate w-full">${shop.name}</h3>
-            <p class="text-[10px] text-gray-500 truncate w-full mt-0.5">${shop.address || 'မကွေး'}</p>
-        </div>
-    `).join("");
+    container.innerHTML = shops.map((shop) => {
+        const shopName = shop.name || shop.shop_name || "ဆိုင်အမည်";
+        const shopAddress = shop.address || shop.location || "မကွေး";
+        const shopImg = shop.image_url || shop.image || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5';
+
+        return `
+            <div onclick="openShopDetail('${shop.shop_id || shop.id}', '${shopName}')" class="min-w-[150px] max-w-[150px] bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col items-center text-center snap-start flex-shrink-0 cursor-pointer hover:shadow-md transition">
+                <img src="${shopImg}" alt="${shopName}" class="w-16 h-16 object-cover rounded-full mb-2 shadow-sm" onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5'">
+                <h3 class="font-bold text-xs text-gray-800 truncate w-full">${shopName}</h3>
+                <p class="text-[10px] text-gray-500 truncate w-full mt-0.5">${shopAddress}</p>
+            </div>
+        `;
+    }).join("");
 }
 
 // Deli Services များကို Screen ပေါ်တွင် ပုံဖော်ပေးခြင်း
@@ -225,21 +239,29 @@ function renderDelis(delis) {
         return;
     }
 
-    container.innerHTML = delis.map(deli => `
-        <div class="min-w-[150px] max-w-[150px] bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col items-center text-center snap-start flex-shrink-0">
-            <img src="${deli.image_url || 'https://via.placeholder.com/80'}" alt="${deli.name}" class="w-14 h-14 object-cover rounded-full mb-2 shadow-sm">
-            <h3 class="font-bold text-xs text-gray-800 truncate w-full">${deli.name}</h3>
-            <p class="text-[10px] text-red-600 font-semibold mt-0.5">Deli ခ: ${deli.fee || 1000} ကျပ်</p>
-        </div>
-    `).join("");
+    container.innerHTML = delis.map(deli => {
+        const deliName = deli.name || "Deli";
+        const deliFee = deli.fee || 1000;
+        const deliImg = deli.image_url || deli.image || 'https://images.unsplash.com/photo-1526367790999-0150786686a2';
+
+        return `
+            <div class="min-w-[150px] max-w-[150px] bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col items-center text-center snap-start flex-shrink-0">
+                <img src="${deliImg}" alt="${deliName}" class="w-14 h-14 object-cover rounded-full mb-2 shadow-sm" onerror="this.src='https://images.unsplash.com/photo-1526367790999-0150786686a2'">
+                <h3 class="font-bold text-xs text-gray-800 truncate w-full">${deliName}</h3>
+                <p class="text-[10px] text-red-600 font-semibold mt-0.5">Deli ခ: ${deliFee} ကျပ်</p>
+            </div>
+        `;
+    }).join("");
 }
 
 function populateDeliSelect(delis) {
     const select = document.getElementById("deliSelect");
     if (!select) return;
-    select.innerHTML = '<option value="">Deli ရွေးပါ</option>' + delis.map(d => `
-        <option value="${d.name}" data-fee="${d.fee || 1000}">${d.name} (${d.fee || 1000} ကျပ်)</option>
-    `).join("");
+    select.innerHTML = '<option value="">Deli ရွေးပါ</option>' + delis.map(d => {
+        const name = d.name || "Deli";
+        const fee = d.fee || 1000;
+        return `<option value="${name}" data-fee="${fee}">${name} (${fee} ကျပ်)</option>`;
+    }).join("");
 }
 
 // ဆိုင်အသေးစိတ်ဖွင့်ရန်
@@ -249,7 +271,7 @@ async function openShopDetail(shopId, shopName) {
     const menuListContainer = document.getElementById("shopMenuList");
     menuListContainer.innerHTML = "<p class='text-gray-500 text-sm'>မီနူးများ ရှာဖွေနေပါသည်...</p>";
 
-    const shopMenus = allMenus.filter(m => String(m.shop_id) === String(shopId) || m.shop_name === shopName);
+    const shopMenus = allMenus.filter(m => String(m.shop_id) === String(shopId) || m.shop_name === shopName || m.shop === shopName);
     
     if (shopMenus.length === 0) {
         menuListContainer.innerHTML = "<p class='text-gray-500 text-sm'>ဤဆိုင်တွင် မီနူးများ မရှိသေးပါ။</p>";
@@ -258,11 +280,15 @@ async function openShopDetail(shopId, shopName) {
 
     menuListContainer.innerHTML = shopMenus.map((item) => {
         const globalIndex = allMenus.findIndex(m => m === item);
+        const itemName = item.name || item.title || item.menu_name || "အမည်မရှိ";
+        const itemPrice = item.price || 0;
+        const itemImg = item.image_url || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+
         return `
             <div class="min-w-[150px] max-w-[150px] bg-white rounded-xl shadow-sm border border-gray-100 p-2 flex flex-col justify-between flex-shrink-0">
-                <img src="${item.image_url || 'https://via.placeholder.com/150'}" class="w-full h-24 object-cover rounded-lg mb-2">
-                <h4 class="font-bold text-xs text-gray-800 truncate">${item.name || item.title}</h4>
-                <p class="text-red-600 font-bold text-xs mt-1">${item.price} ကျပ်</p>
+                <img src="${itemImg}" class="w-full h-24 object-cover rounded-lg mb-2" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c'">
+                <h4 class="font-bold text-xs text-gray-800 truncate">${itemName}</h4>
+                <p class="text-red-600 font-bold text-xs mt-1">${itemPrice} ကျပ်</p>
                 <button onclick="handleAddToCartClick(${globalIndex})" class="mt-2 bg-[#B80D0D] text-white py-1 rounded-lg text-[11px] font-semibold w-full">ထည့်မည်</button>
             </div>
         `;
@@ -271,7 +297,8 @@ async function openShopDetail(shopId, shopName) {
 
 // Option Modal ဖွင့်ရန်
 function openOptionModal(item, options) {
-    document.getElementById("optionModalTitle").innerText = `${item.name || item.title} - Option ရွေးပါ`;
+    const itemName = item.name || item.title || item.menu_name || "";
+    document.getElementById("optionModalTitle").innerText = `${itemName} - Option ရွေးပါ`;
     const container = document.getElementById("optionListContainer");
     
     container.innerHTML = options.map((opt, idx) => `
@@ -341,16 +368,19 @@ function renderCartList() {
         return;
     }
 
-    listEl.innerHTML = cart.map((item, index) => `
-        <div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-gray-100 text-xs">
-            <div>
-                <p class="font-bold text-gray-800">${item.name || item.title}</p>
-                ${item.selectedOption ? `<p class='text-gray-500 text-[10px]'>Option: ${item.selectedOption.name} (+${item.selectedOption.price} ကျပ်)</p>` : ''}
-                <p class="text-red-600 font-semibold">${item.finalPrice} ကျပ်</p>
+    listEl.innerHTML = cart.map((item, index) => {
+        const itemName = item.name || item.title || item.menu_name || "အမည်မရှိ";
+        return `
+            <div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-gray-100 text-xs">
+                <div>
+                    <p class="font-bold text-gray-800">${itemName}</p>
+                    ${item.selectedOption ? `<p class='text-gray-500 text-[10px]'>Option: ${item.selectedOption.name} (+${item.selectedOption.price} ကျပ်)</p>` : ''}
+                    <p class="text-red-600 font-semibold">${item.finalPrice} ကျပ်</p>
+                </div>
+                <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-600 font-bold px-2 py-1">✕</button>
             </div>
-            <button onclick="removeFromCart(${index})" class="text-gray-400 hover:text-red-600 font-bold px-2 py-1">✕</button>
-        </div>
-    `).join("");
+        `;
+    }).join("");
 
     updateCartTotals();
 }
