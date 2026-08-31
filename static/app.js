@@ -176,7 +176,7 @@ async function handleAddToCartClick(originalIndex) {
     }
 }
 
-// UI Rendering Functions (Supabase Table Column များနှင့် ကိုက်ညီစေရန်)
+// UI Rendering Functions (Supabase Storage URL များနှင့် ကိုက်ညီစေရန်)
 function renderMenus(menus) {
     const container = document.getElementById("menuContainer");
     if (!container) return;
@@ -190,8 +190,11 @@ function renderMenus(menus) {
         const itemName = item.menu_name || item.name || item.title || "အမည်မရှိ";
         const itemShop = item.shop_name || "";
         const itemPrice = item.price || 0;
-        // Supabase ထဲက image_url ကို တိုက်ရိုက်ဖော်ပြရန် (မရှိမှသာ Unsplash ပုံပြမည်)
-        const itemImg = item.image_url || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+        
+        let itemImg = item.image_url || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+        if (itemImg && !itemImg.startsWith('http')) {
+            itemImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${itemImg}`;
+        }
 
         return `
             <div class="min-w-[160px] max-w-[160px] bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col justify-between snap-start flex-shrink-0 p-2.5">
@@ -221,7 +224,10 @@ function renderShops(shops) {
     container.innerHTML = shops.map((shop) => {
         const shopName = shop.shop_name || shop.name || "ဆိုင်အမည်";
         const shopAddress = shop.address || "မကွေး";
-        const shopImg = shop.image_url || shop.image || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5';
+        let shopImg = shop.image_url || shop.image || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5';
+        if (shopImg && !shopImg.startsWith('http')) {
+            shopImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${shopImg}`;
+        }
         const shopId = shop.shop_id || shop.id;
 
         return `
@@ -246,7 +252,10 @@ function renderDelis(delis) {
     container.innerHTML = delis.map(deli => {
         const deliName = deli.name || "Deli";
         const deliFee = deli.fee || 1000;
-        const deliImg = deli.image_url || deli.image || 'https://images.unsplash.com/photo-1526367790999-0150786686a2';
+        let deliImg = deli.image_url || deli.image || 'https://images.unsplash.com/photo-1526367790999-0150786686a2';
+        if (deliImg && !deliImg.startsWith('http')) {
+            deliImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${deliImg}`;
+        }
 
         return `
             <div class="min-w-[150px] max-w-[150px] bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col items-center text-center snap-start flex-shrink-0">
@@ -285,7 +294,10 @@ async function openShopDetail(shopId, shopName) {
         const globalIndex = allMenus.findIndex(m => m === item);
         const itemName = item.menu_name || item.name || item.title || "အမည်မရှိ";
         const itemPrice = item.price || 0;
-        const itemImg = item.image_url || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+        let itemImg = item.image_url || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+        if (itemImg && !itemImg.startsWith('http')) {
+            itemImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${itemImg}`;
+        }
 
         return `
             <div class="min-w-[150px] max-w-[150px] bg-white rounded-xl shadow-sm border border-gray-100 p-2 flex flex-col justify-between flex-shrink-0">
@@ -298,20 +310,27 @@ async function openShopDetail(shopId, shopName) {
     }).join("");
 }
 
+// Option Modal ဖွင့်ခြင်း (choice_name နှင့် additional_price ကို သုံးရန်)
 function openOptionModal(item, options) {
     const itemName = item.menu_name || item.name || item.title || "";
     document.getElementById("optionModalTitle").innerText = `${itemName} - Option ရွေးပါ`;
     const container = document.getElementById("optionListContainer");
     
-    container.innerHTML = options.map((opt, idx) => `
-        <label class="flex items-center justify-between p-2 border-b border-gray-100 text-sm cursor-pointer">
-            <div class="flex items-center gap-2">
-                <input type="radio" name="menuOption" value="${opt.id || idx}" data-name="${opt.name || opt.option_name}" data-price="${opt.price || 0}" ${idx === 0 ? 'checked' : ''} class="text-[#B80D0D] focus:ring-[#B80D0D]">
-                <span>${opt.name || opt.option_name}</span>
-            </div>
-            <span class="text-gray-500 text-xs">+${opt.price || 0} ကျပ်</span>
-        </label>
-    `).join("");
+    container.innerHTML = options.map((opt, idx) => {
+        const choiceName = opt.choice_name || opt.name || "Option";
+        const addPrice = opt.additional_price !== undefined ? opt.additional_price : (opt.price || 0);
+        const optId = opt.option_id || opt.id || idx;
+
+        return `
+            <label class="flex items-center justify-between p-2 border-b border-gray-100 text-sm cursor-pointer">
+                <div class="flex items-center gap-2">
+                    <input type="radio" name="menuOption" value="${optId}" data-name="${choiceName}" data-price="${addPrice}" ${idx === 0 ? 'checked' : ''} class="text-[#B80D0D] focus:ring-[#B80D0D]">
+                    <span>${choiceName}</span>
+                </div>
+                <span class="text-gray-500 text-xs">+${addPrice} ကျပ်</span>
+            </label>
+        `;
+    }).join("");
 
     document.getElementById("optionModal").classList.remove("hidden");
 }
