@@ -39,7 +39,7 @@ def send_telegram_notification(chat_id: str, message: str):
     except Exception as e:
         print(f"Telegram Notification Error: {e}")
 
-# Routers များကို အက်ပလီကေးရှင်းသို့ ချိတ်ဆက်ခြင်း
+# Routers များကို အက်ပလီကေးရှင်းသို့ ချိတ်ဆက်ခြင်း (menus.router ကို ထည့်သွင်းထားသည်)
 app.include_router(orders.router)
 app.include_router(menus.router)
 app.include_router(shops_portal.router)

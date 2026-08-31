@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Optional
 from database import supabase
 
+# ဝယ်သူသုံး /menus အတွက် Prefix မပါသော Router တစ်ခု
 router = APIRouter(tags=["Menus"])
 
 class MenuCreate(BaseModel):
@@ -16,7 +17,7 @@ class MenuUpdate(BaseModel):
     price: float
     status: Optional[str] = "Active"
 
-# --- ၁။ ဝယ်သူသုံး App အတွက် (Active မီနူးအားလုံး ဆွဲထုတ်ရန်) ---
+# --- ၁။ ဝယ်သူသုံး App အတွက် (Active မီနူးအားလုံး ဆွဲထုတ်ရန်) -> URL: /menus ---
 @router.get("/menus")
 def get_all_menus():
     try:
