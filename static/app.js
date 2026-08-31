@@ -163,7 +163,6 @@ async function handleAddToCartClick(originalIndex) {
     }
 }
 
-// မူလအတိုင်း ပုံကို တိုက်ရိုက်ဖော်ပြပေးမည့် Function (အပြောင်းအလဲမလုပ်တော့ပါ)
 function renderMenus(menus) {
     const container = document.getElementById("menuContainer");
     if (!container) return;
@@ -178,8 +177,10 @@ function renderMenus(menus) {
         const itemShop = item.shop_name || "";
         const itemPrice = item.price || 0;
         
-        // မူလအတိုင်း API/Database မှ လာသည့်အတိုင်း တိုက်ရိုက်သုံးမည်
-        const itemImg = item.image_url || item.image || '';
+        let itemImg = item.image_url || item.image || '';
+        if (itemImg && !itemImg.startsWith('http')) {
+            itemImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${itemImg}`;
+        }
 
         return `
             <div class="min-w-[160px] max-w-[160px] bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col justify-between snap-start flex-shrink-0 p-2.5">
@@ -209,7 +210,10 @@ function renderShops(shops) {
     container.innerHTML = shops.map((shop) => {
         const shopName = shop.shop_name || shop.name || "ဆိုင်အမည်";
         const shopAddress = shop.address || "မကွေး";
-        const shopImg = shop.image_url || shop.image || '';
+        let shopImg = shop.image_url || shop.image || '';
+        if (shopImg && !shopImg.startsWith('http')) {
+            shopImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${shopImg}`;
+        }
         const shopId = shop.shop_id || shop.id;
 
         return `
@@ -234,7 +238,10 @@ function renderDelis(delis) {
     container.innerHTML = delis.map(deli => {
         const deliName = deli.name || "Deli";
         const deliFee = deli.fee || 1000;
-        const deliImg = deli.image_url || deli.image || '';
+        let deliImg = deli.image_url || deli.image || '';
+        if (deliImg && !deliImg.startsWith('http')) {
+            deliImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${deliImg}`;
+        }
 
         return `
             <div class="min-w-[150px] max-w-[150px] bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col items-center text-center snap-start flex-shrink-0">
@@ -273,7 +280,10 @@ async function openShopDetail(shopId, shopName) {
         const globalIndex = allMenus.findIndex(m => m === item);
         const itemName = item.menu_name || item.name || item.title || "အမည်မရှိ";
         const itemPrice = item.price || 0;
-        const itemImg = item.image_url || item.image || '';
+        let itemImg = item.image_url || item.image || '';
+        if (itemImg && !itemImg.startsWith('http')) {
+            itemImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${itemImg}`;
+        }
 
         return `
             <div class="min-w-[150px] max-w-[150px] bg-white rounded-xl shadow-sm border border-gray-100 p-2 flex flex-col justify-between flex-shrink-0">
