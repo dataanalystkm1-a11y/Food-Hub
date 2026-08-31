@@ -43,7 +43,7 @@ async function fetchAllData() {
             allDelis = [];
         }
 
-        // 4. Options ဆွဲထုတ်ရန်
+        // 4. Options ဆွဲထုတ်ရန် (Menu Options)
         try {
             const optRes = await fetch(`${API_BASE_URL}/menu-options`);
             const optJson = await optRes.json();
@@ -129,32 +129,36 @@ function setupEventListeners() {
 // ရှာဖွေရန် (Search filtering)
 function filterMenusAndShops(keyword) {
     const filteredMenus = allMenus.filter(item => 
-        (item.name || item.title || item.menu_name || "").toLowerCase().includes(keyword) ||
-        (item.shop_name || item.shop || "").toLowerCase().includes(keyword)
+        (item.menu_name || item.name || item.title || "").toLowerCase().includes(keyword) ||
+        (item.shop_name || "").toLowerCase().includes(keyword)
     );
     const filteredShops = allShops.filter(shop => 
-        (shop.name || shop.shop_name || "").toLowerCase().includes(keyword)
+        (shop.shop_name || shop.name || "").toLowerCase().includes(keyword)
     );
     renderMenus(filteredMenus);
     renderShops(filteredShops);
 }
 
-// "ထည့်မည်" နှိပ်တဲ့အခါ Option ပါမပါ စစ်ဆေးရန်
+// "ထည့်မည်" နှိပ်တဲ့အခါ Option ပါမပါ စစ်ဆေးရန် (menu_id ဖြင့် တိုက်ဆိုင်စစ်ဆေးခြင်း)
 async function handleAddToCartClick(originalIndex) {
     playTapSound();
     const item = allMenus[originalIndex];
     if (!item) return;
     currentSelectedItem = item;
 
-    const targetMenuId = item.menu_id || item.id;
+    // Supabase table က menu_id ကို အဓိက သုံးရန်
+    const currentMenuId = String(item.menu_id || item.id);
     let menuOptions = [];
+
+    // 1. Download လုပ်ထားပြီးသား allOptions ထဲမှ menu_id တူသည်များကို ရှာရန်
     if (Array.isArray(allOptions) && allOptions.length > 0) {
-        menuOptions = allOptions.filter(opt => String(opt.menu_id) === String(targetMenuId));
+        menuOptions = allOptions.filter(opt => String(opt.menu_id) === currentMenuId);
     }
 
+    // 2. မတွေ့သေးပါက API မှ သီးသန့် endpoint ဖြင့် ထပ်မံဆွဲထုတ်ရန်
     if (menuOptions.length === 0) {
         try {
-            const res = await fetch(`${API_BASE_URL}/menu-options/${targetMenuId}`);
+            const res = await fetch(`${API_BASE_URL}/menu-options/${currentMenuId}`);
             const json = await res.json();
             const fetchedData = json.data || json;
             if (Array.isArray(fetchedData)) {
@@ -172,7 +176,7 @@ async function handleAddToCartClick(originalIndex) {
     }
 }
 
-// UI Rendering Functions (မီနူးများကို Screen ပေါ်တွင် ပုံဖော်ပေးခြင်း)
+// UI Rendering Functions (Supabase Table Column များနှင့် ကိုက်ညီစေရန်)
 function renderMenus(menus) {
     const container = document.getElementById("menuContainer");
     if (!container) return;
@@ -183,9 +187,10 @@ function renderMenus(menus) {
     }
 
     container.innerHTML = menus.map((item, index) => {
-        const itemName = item.name || item.title || item.menu_name || "အမည်မရှိ";
-        const itemShop = item.shop_name || item.shop || "";
+        const itemName = item.menu_name || item.name || item.title || "အမည်မရှိ";
+        const itemShop = item.shop_name || "";
         const itemPrice = item.price || 0;
+        // Supabase ထဲက image_url ကို တိုက်ရိုက်ဖော်ပြရန် (မရှိမှသာ Unsplash ပုံပြမည်)
         const itemImg = item.image_url || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
 
         return `
@@ -204,7 +209,6 @@ function renderMenus(menus) {
     }).join("");
 }
 
-// ဆိုင်များကို Screen ပေါ်တွင် ပုံဖော်ပေးခြင်း
 function renderShops(shops) {
     const container = document.getElementById("shopContainer");
     if (!container) return;
@@ -215,12 +219,13 @@ function renderShops(shops) {
     }
 
     container.innerHTML = shops.map((shop) => {
-        const shopName = shop.name || shop.shop_name || "ဆိုင်အမည်";
-        const shopAddress = shop.address || shop.location || "မကွေး";
+        const shopName = shop.shop_name || shop.name || "ဆိုင်အမည်";
+        const shopAddress = shop.address || "မကွေး";
         const shopImg = shop.image_url || shop.image || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5';
+        const shopId = shop.shop_id || shop.id;
 
         return `
-            <div onclick="openShopDetail('${shop.shop_id || shop.id}', '${shopName}')" class="min-w-[150px] max-w-[150px] bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col items-center text-center snap-start flex-shrink-0 cursor-pointer hover:shadow-md transition">
+            <div onclick="openShopDetail('${shopId}', '${shopName}')" class="min-w-[150px] max-w-[150px] bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col items-center text-center snap-start flex-shrink-0 cursor-pointer hover:shadow-md transition">
                 <img src="${shopImg}" alt="${shopName}" class="w-16 h-16 object-cover rounded-full mb-2 shadow-sm" onerror="this.src='https://images.unsplash.com/photo-1555396273-367ea4eb4db5'">
                 <h3 class="font-bold text-xs text-gray-800 truncate w-full">${shopName}</h3>
                 <p class="text-[10px] text-gray-500 truncate w-full mt-0.5">${shopAddress}</p>
@@ -229,7 +234,6 @@ function renderShops(shops) {
     }).join("");
 }
 
-// Deli Services များကို Screen ပေါ်တွင် ပုံဖော်ပေးခြင်း
 function renderDelis(delis) {
     const container = document.getElementById("deliContainer");
     if (!container) return;
@@ -264,14 +268,13 @@ function populateDeliSelect(delis) {
     }).join("");
 }
 
-// ဆိုင်အသေးစိတ်ဖွင့်ရန်
 async function openShopDetail(shopId, shopName) {
     document.getElementById("shopModalTitle").innerText = shopName;
     document.getElementById("shopModal").classList.remove("hidden");
     const menuListContainer = document.getElementById("shopMenuList");
     menuListContainer.innerHTML = "<p class='text-gray-500 text-sm'>မီနူးများ ရှာဖွေနေပါသည်...</p>";
 
-    const shopMenus = allMenus.filter(m => String(m.shop_id) === String(shopId) || m.shop_name === shopName || m.shop === shopName);
+    const shopMenus = allMenus.filter(m => String(m.shop_id) === String(shopId) || m.shop_name === shopName);
     
     if (shopMenus.length === 0) {
         menuListContainer.innerHTML = "<p class='text-gray-500 text-sm'>ဤဆိုင်တွင် မီနူးများ မရှိသေးပါ။</p>";
@@ -280,7 +283,7 @@ async function openShopDetail(shopId, shopName) {
 
     menuListContainer.innerHTML = shopMenus.map((item) => {
         const globalIndex = allMenus.findIndex(m => m === item);
-        const itemName = item.name || item.title || item.menu_name || "အမည်မရှိ";
+        const itemName = item.menu_name || item.name || item.title || "အမည်မရှိ";
         const itemPrice = item.price || 0;
         const itemImg = item.image_url || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
 
@@ -295,17 +298,16 @@ async function openShopDetail(shopId, shopName) {
     }).join("");
 }
 
-// Option Modal ဖွင့်ရန်
 function openOptionModal(item, options) {
-    const itemName = item.name || item.title || item.menu_name || "";
+    const itemName = item.menu_name || item.name || item.title || "";
     document.getElementById("optionModalTitle").innerText = `${itemName} - Option ရွေးပါ`;
     const container = document.getElementById("optionListContainer");
     
     container.innerHTML = options.map((opt, idx) => `
         <label class="flex items-center justify-between p-2 border-b border-gray-100 text-sm cursor-pointer">
             <div class="flex items-center gap-2">
-                <input type="radio" name="menuOption" value="${opt.id || idx}" data-name="${opt.name}" data-price="${opt.price || 0}" ${idx === 0 ? 'checked' : ''} class="text-[#B80D0D] focus:ring-[#B80D0D]">
-                <span>${opt.name}</span>
+                <input type="radio" name="menuOption" value="${opt.id || idx}" data-name="${opt.name || opt.option_name}" data-price="${opt.price || 0}" ${idx === 0 ? 'checked' : ''} class="text-[#B80D0D] focus:ring-[#B80D0D]">
+                <span>${opt.name || opt.option_name}</span>
             </div>
             <span class="text-gray-500 text-xs">+${opt.price || 0} ကျပ်</span>
         </label>
@@ -369,7 +371,7 @@ function renderCartList() {
     }
 
     listEl.innerHTML = cart.map((item, index) => {
-        const itemName = item.name || item.title || item.menu_name || "အမည်မရှိ";
+        const itemName = item.menu_name || item.name || item.title || "အမည်မရှိ";
         return `
             <div class="flex justify-between items-center bg-white p-2.5 rounded-xl border border-gray-100 text-xs">
                 <div>
@@ -408,7 +410,6 @@ function updateCartTotals() {
     document.getElementById("totalAmount").innerText = `${total} ကျပ်`;
 }
 
-// Order တင်ခြင်း (Submit Order)
 async function submitOrder() {
     const name = document.getElementById("custName")?.value.trim();
     const phone = document.getElementById("custPhone")?.value.trim();
@@ -455,7 +456,6 @@ async function submitOrder() {
             cart = [];
             updateCartCount();
             document.getElementById("cartModal")?.classList.add("hidden");
-            // Input များကို ရှင်းလင်းရန်
             document.getElementById("custName").value = "";
             document.getElementById("custPhone").value = "";
             document.getElementById("custAddress").value = "";
@@ -479,9 +479,7 @@ function showErrorMessage() {
     });
 }
 
-function playTapSound() {
-    // Sound effect logic placeholder
-}
+function playTapSound() {}
 
 function showToast(message) {
     const toast = document.createElement("div");
