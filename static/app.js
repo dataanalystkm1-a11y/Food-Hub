@@ -9,7 +9,6 @@ let cart = [];
 let currentSelectedItem = null;
 let currentSelectedOptions = [];
 
-// Page စတင်ဖွင့်ချိန်တွင် ဒေတာများ ဆွဲထုတ်ရန်
 document.addEventListener("DOMContentLoaded", () => {
     initializeApp();
     setupEventListeners();
@@ -19,20 +18,16 @@ async function initializeApp() {
     await fetchAllData();
 }
 
-// ဆာဗာမှ ဒေတာများ ရယူခြင်း
 async function fetchAllData() {
     try {
-        // 1. Menus ဆွဲထုတ်ရန်
         const menuRes = await fetch(`${API_BASE_URL}/menus`);
         const menuJson = await menuRes.json();
         allMenus = Array.isArray(menuJson) ? menuJson : (menuJson.data || []);
 
-        // 2. Shops ဆွဲထုတ်ရန်
         const shopRes = await fetch(`${API_BASE_URL}/shops`);
         const shopJson = await shopRes.json();
         allShops = Array.isArray(shopJson) ? shopJson : (shopJson.data || []);
 
-        // 3. Deli Services ဆွဲထုတ်ရန်
         try {
             const deliRes = await fetch(`${API_BASE_URL}/deli`);
             const deliJson = await deliRes.json();
@@ -43,7 +38,6 @@ async function fetchAllData() {
             allDelis = [];
         }
 
-        // 4. Options ဆွဲထုတ်ရန် (Menu Options)
         try {
             const optRes = await fetch(`${API_BASE_URL}/menu-options`);
             const optJson = await optRes.json();
@@ -52,7 +46,6 @@ async function fetchAllData() {
             allOptions = [];
         }
 
-        // UI တွင် ဒေတာများ ဖော်ပြရန်
         renderMenus(allMenus);
         renderShops(allShops);
 
@@ -62,7 +55,6 @@ async function fetchAllData() {
     }
 }
 
-// Event Listeners ချိတ်ဆက်ခြင်း
 function setupEventListeners() {
     const searchInput = document.getElementById("searchInput");
     const clearSearchBtn = document.getElementById("clearSearchBtn");
@@ -126,7 +118,6 @@ function setupEventListeners() {
     }
 }
 
-// ရှာဖွေရန် (Search filtering)
 function filterMenusAndShops(keyword) {
     const filteredMenus = allMenus.filter(item => 
         (item.menu_name || item.name || item.title || "").toLowerCase().includes(keyword) ||
@@ -139,23 +130,19 @@ function filterMenusAndShops(keyword) {
     renderShops(filteredShops);
 }
 
-// "ထည့်မည်" နှိပ်တဲ့အခါ Option ပါမပါ စစ်ဆေးရန် (menu_id ဖြင့် တိုက်ဆိုင်စစ်ဆေးခြင်း)
 async function handleAddToCartClick(originalIndex) {
     playTapSound();
     const item = allMenus[originalIndex];
     if (!item) return;
     currentSelectedItem = item;
 
-    // Supabase table က menu_id ကို အဓိက သုံးရန်
     const currentMenuId = String(item.menu_id || item.id);
     let menuOptions = [];
 
-    // 1. Download လုပ်ထားပြီးသား allOptions ထဲမှ menu_id တူသည်များကို ရှာရန်
     if (Array.isArray(allOptions) && allOptions.length > 0) {
         menuOptions = allOptions.filter(opt => String(opt.menu_id) === currentMenuId);
     }
 
-    // 2. မတွေ့သေးပါက API မှ သီးသန့် endpoint ဖြင့် ထပ်မံဆွဲထုတ်ရန်
     if (menuOptions.length === 0) {
         try {
             const res = await fetch(`${API_BASE_URL}/menu-options/${currentMenuId}`);
@@ -176,7 +163,7 @@ async function handleAddToCartClick(originalIndex) {
     }
 }
 
-// UI Rendering Functions (Supabase Storage URL များနှင့် ကိုက်ညီစေရန်)
+// မူလအတိုင်း ပုံကို တိုက်ရိုက်ဖော်ပြပေးမည့် Function (အပြောင်းအလဲမလုပ်တော့ပါ)
 function renderMenus(menus) {
     const container = document.getElementById("menuContainer");
     if (!container) return;
@@ -191,10 +178,8 @@ function renderMenus(menus) {
         const itemShop = item.shop_name || "";
         const itemPrice = item.price || 0;
         
-        let itemImg = item.image_url || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
-        if (itemImg && !itemImg.startsWith('http')) {
-            itemImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${itemImg}`;
-        }
+        // မူလအတိုင်း API/Database မှ လာသည့်အတိုင်း တိုက်ရိုက်သုံးမည်
+        const itemImg = item.image_url || item.image || '';
 
         return `
             <div class="min-w-[160px] max-w-[160px] bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col justify-between snap-start flex-shrink-0 p-2.5">
@@ -224,10 +209,7 @@ function renderShops(shops) {
     container.innerHTML = shops.map((shop) => {
         const shopName = shop.shop_name || shop.name || "ဆိုင်အမည်";
         const shopAddress = shop.address || "မကွေး";
-        let shopImg = shop.image_url || shop.image || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5';
-        if (shopImg && !shopImg.startsWith('http')) {
-            shopImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${shopImg}`;
-        }
+        const shopImg = shop.image_url || shop.image || '';
         const shopId = shop.shop_id || shop.id;
 
         return `
@@ -252,10 +234,7 @@ function renderDelis(delis) {
     container.innerHTML = delis.map(deli => {
         const deliName = deli.name || "Deli";
         const deliFee = deli.fee || 1000;
-        let deliImg = deli.image_url || deli.image || 'https://images.unsplash.com/photo-1526367790999-0150786686a2';
-        if (deliImg && !deliImg.startsWith('http')) {
-            deliImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${deliImg}`;
-        }
+        const deliImg = deli.image_url || deli.image || '';
 
         return `
             <div class="min-w-[150px] max-w-[150px] bg-white rounded-2xl shadow-sm border border-gray-100 p-3 flex flex-col items-center text-center snap-start flex-shrink-0">
@@ -294,10 +273,7 @@ async function openShopDetail(shopId, shopName) {
         const globalIndex = allMenus.findIndex(m => m === item);
         const itemName = item.menu_name || item.name || item.title || "အမည်မရှိ";
         const itemPrice = item.price || 0;
-        let itemImg = item.image_url || item.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
-        if (itemImg && !itemImg.startsWith('http')) {
-            itemImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${itemImg}`;
-        }
+        const itemImg = item.image_url || item.image || '';
 
         return `
             <div class="min-w-[150px] max-w-[150px] bg-white rounded-xl shadow-sm border border-gray-100 p-2 flex flex-col justify-between flex-shrink-0">
@@ -310,7 +286,6 @@ async function openShopDetail(shopId, shopName) {
     }).join("");
 }
 
-// Option Modal ဖွင့်ခြင်း (choice_name နှင့် additional_price ကို သုံးရန်)
 function openOptionModal(item, options) {
     const itemName = item.menu_name || item.name || item.title || "";
     document.getElementById("optionModalTitle").innerText = `${itemName} - Option ရွေးပါ`;
