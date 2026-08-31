@@ -22,7 +22,7 @@ app.add_middleware(
 )
 
 # --- Static Files & Frontend Mount ---
-# Root directory ထဲက ဖိုင်များ (index.html, app.js, style.css စသည်ဖြင့်) ကို ဖွင့်ပေးရန်
+# CSS နှင့် JS ဖိုင်များကို /static လမ်းကြောင်းအောက်တွင် သီးသန့် mount လုပ်ခြင်း
 app.mount("/static", StaticFiles(directory="."), name="static")
 
 # --- Telegram Bot Configuration ---
@@ -44,13 +44,13 @@ def send_telegram_notification(chat_id: str, message: str):
     except Exception as e:
         print(f"Telegram Notification Error: {e}")
 
-# Routers များကို အက်ပလီကေးရှင်းသို့ ချိတ်ဆက်ခြင်း
-app.include_router(orders.router)
-app.include_router(menus.router)
-app.include_router(shops_portal.router)
+# --- Routers များကို /api prefix ဖြင့် ချိတ်ဆက်ခြင်း ---
+app.include_router(orders.router, prefix="/api")
+app.include_router(menus.router, prefix="/api")
+app.include_router(shops_portal.router, prefix="/api")
 
 # --- မီနူး Options အားလုံးကို ဆွဲထုတ်ရန် Endpoint (GET Method) ---
-@app.get("/menu-options")
+@app.get("/api/menu-options")
 def get_all_menu_options():
     try:
         response = supabase.table("menu_options").select("*").execute()
@@ -59,7 +59,7 @@ def get_all_menu_options():
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- မီနူးတစ်ခုချင်းစီ၏ ရွေးချယ်စရာ Options များကို ဆွဲထုတ်ရန် Endpoint ---
-@app.get("/menu-options/{menu_id}")
+@app.get("/api/menu-options/{menu_id}")
 def get_menu_options(menu_id: int):
     try:
         response = supabase.table("menu_options").select("*").eq("menu_id", menu_id).execute()
@@ -74,7 +74,7 @@ class MenuOptionCreate(BaseModel):
     choice_name: str
     additional_price: Optional[float] = 0
 
-@app.post("/menu-options")
+@app.post("/api/menu-options")
 def create_menu_option(option: MenuOptionCreate):
     try:
         response = supabase.table("menu_options").insert({
@@ -88,7 +88,7 @@ def create_menu_option(option: MenuOptionCreate):
         raise HTTPException(status_code=400, detail=str(e))
 
 # --- Telegram Webhook ---
-@app.post("/telegram-webhook")
+@app.post("/api/telegram-webhook")
 async def telegram_webhook(req: Request):
     try:
         data = await req.json()
@@ -138,7 +138,7 @@ async def shop_dashboard():
     return "<h1>Dashboard template not found</h1>"
 
 # Shops API Endpoint
-@app.get("/shops")
+@app.get("/api/shops")
 def get_shops():
     try:
         response = supabase.table("shops").select("*").execute()
@@ -147,7 +147,7 @@ def get_shops():
         raise HTTPException(status_code=500, detail=str(e))
 
 # Deli API Endpoint
-@app.get("/deli")
+@app.get("/api/deli")
 def get_deli():
     try:
         response = supabase.table("deli").select("*").execute()
