@@ -44,6 +44,15 @@ app.include_router(orders.router)
 app.include_router(menus.router)
 app.include_router(shops_portal.router)
 
+# --- မီနူး Options အားလုံးကို ဆွဲထုတ်ရန် Endpoint (GET Method) ---
+@app.get("/menu-options")
+def get_all_menu_options():
+    try:
+        response = supabase.table("menu_options").select("*").execute()
+        return {"success": True, "data": response.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 # --- မီနူးတစ်ခုချင်းစီ၏ ရွေးချယ်စရာ Options များကို ဆွဲထုတ်ရန် Endpoint ---
 @app.get("/menu-options/{menu_id}")
 def get_menu_options(menu_id: int):
