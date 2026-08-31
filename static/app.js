@@ -236,8 +236,9 @@ function renderDelis(delis) {
     }
 
     container.innerHTML = delis.map(deli => {
-        const deliName = deli.name || "Deli";
-        const deliFee = deli.fee || 1000;
+        // Supabase က deli_name နဲ့ fees ဖြစ်နေတာကို ဖမ်းပေးခြင်း
+        const deliName = deli.deli_name || deli.name || "Deli";
+        const deliFee = deli.fees !== undefined ? deli.fees : (deli.fee || 1000);
         let deliImg = deli.image_url || deli.image || '';
         if (deliImg && !deliImg.startsWith('http')) {
             deliImg = `https://xdxyjcuqtajwdiunmahy.supabase.co/storage/v1/object/public/images/${deliImg}`;
@@ -257,8 +258,8 @@ function populateDeliSelect(delis) {
     const select = document.getElementById("deliSelect");
     if (!select) return;
     select.innerHTML = '<option value="">Deli ရွေးပါ</option>' + delis.map(d => {
-        const name = d.name || "Deli";
-        const fee = d.fee || 1000;
+        const name = d.deli_name || d.name || "Deli";
+        const fee = d.fees !== undefined ? d.fees : (d.fee || 1000);
         return `<option value="${name}" data-fee="${fee}">${name} (${fee} ကျပ်)</option>`;
     }).join("");
 }
