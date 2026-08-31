@@ -2,7 +2,8 @@ import os
 import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional
 from database import supabase
@@ -19,6 +20,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- Static Files & Frontend Mount ---
+# Root directory ထဲက ဖိုင်များ (index.html, app.js, style.css စသည်ဖြင့်) ကို ဖွင့်ပေးရန်
+app.mount("/static", StaticFiles(directory="."), name="static")
 
 # --- Telegram Bot Configuration ---
 TELEGRAM_BOT_TOKEN = "8453664740:AAGiLC4MPpz7Ce_B2-UuZWHyK2TKA35Mj0Q"
@@ -39,7 +44,7 @@ def send_telegram_notification(chat_id: str, message: str):
     except Exception as e:
         print(f"Telegram Notification Error: {e}")
 
-# Routers များကို အက်ပလီကေးရှင်းသို့ ချိတ်ဆက်ခြင်း (menus.router ကို ထည့်သွင်းထားသည်)
+# Routers များကို အက်ပလီကေးရှင်းသို့ ချိတ်ဆက်ခြင်း
 app.include_router(orders.router)
 app.include_router(menus.router)
 app.include_router(shops_portal.router)
@@ -150,6 +155,9 @@ def get_deli():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/")
-def root():
+# --- Frontend Root (index.html) ---
+@app.get("/", response_class=FileResponse)
+def serve_index():
+    if os.path.exists("index.html"):
+        return "index.html"
     return {"message": "WATI Food Hub API is running smoothly!"}
