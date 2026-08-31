@@ -1,5 +1,5 @@
 // API Base URL (Render Server URL ချိတ်ဆက်ရန်)
-const API_BASE_URL = "https://wati-backend-api.onrender.com"; // Backend ရဲ့ Render URL 
+const API_BASE_URL = "https://wati-backend-api.onrender.com";// Backend ရဲ့ Render URL 
 
 let allMenus = [];
 let allShops = [];
