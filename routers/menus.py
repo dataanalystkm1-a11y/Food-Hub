@@ -3,7 +3,6 @@ from pydantic import BaseModel
 from typing import Optional
 from database import supabase
 
-# prefix ကို ဖြုတ်လိုက်ပါ (သို့မှသာ /menus နှင့် /shop-portal/... တို့ကို တိုက်ရိုက်ခေါ်နိုင်မည်)
 router = APIRouter(tags=["Menus"])
 
 class MenuCreate(BaseModel):

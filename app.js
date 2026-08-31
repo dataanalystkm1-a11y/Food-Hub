@@ -19,7 +19,7 @@ async function initializeApp() {
 async function fetchAllData() {
     try {
         // 1. Menus ဆွဲထုတ်ရန် (Backend router prefix /shop-portal နှင့် ကိုက်ညီစေရန် ပြင်ထားသည်)
-        const menuRes = await fetch(`${API_BASE_URL}/shop-portal/menus`);
+        const menuRes = await fetch(`${API_BASE_URL}/menus`);
         const menuJson = await menuRes.json();
         allMenus = Array.isArray(menuJson) ? menuJson : (menuJson.data || []);
 
