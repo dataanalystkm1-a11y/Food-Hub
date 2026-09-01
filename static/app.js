@@ -7,7 +7,6 @@ let allDelis = [];
 let allOptions = [];
 let cart = [];
 let currentSelectedItem = null;
-let currentSelectedOptions = [];
 
 document.addEventListener("DOMContentLoaded", () => {
     initializeApp();
@@ -20,14 +19,17 @@ async function initializeApp() {
 
 async function fetchAllData() {
     try {
+        // 1. Menus Fetch
         const menuRes = await fetch(`${API_BASE_URL}/menus`);
         const menuJson = await menuRes.json();
         allMenus = Array.isArray(menuJson) ? menuJson : (menuJson.data || []);
 
+        // 2. Shops Fetch
         const shopRes = await fetch(`${API_BASE_URL}/shops`);
         const shopJson = await shopRes.json();
         allShops = Array.isArray(shopJson) ? shopJson : (shopJson.data || []);
 
+        // 3. Deli Fetch (သီးသန့်ခွဲထုတ်ထားခြင်း)
         try {
             const deliRes = await fetch(`${API_BASE_URL}/deli`);
             const deliJson = await deliRes.json();
@@ -35,9 +37,11 @@ async function fetchAllData() {
             renderDelis(allDelis);
             populateDeliSelect(allDelis);
         } catch (err) {
+            console.error("Deli fetch error:", err);
             allDelis = [];
         }
 
+        // 4. Menu Options Fetch
         try {
             const optRes = await fetch(`${API_BASE_URL}/menu-options`);
             const optJson = await optRes.json();
@@ -131,7 +135,6 @@ function filterMenusAndShops(keyword) {
 }
 
 async function handleAddToCartClick(originalIndex) {
-    playTapSound();
     const item = allMenus[originalIndex];
     if (!item) return;
     currentSelectedItem = item;
@@ -226,6 +229,7 @@ function renderShops(shops) {
     }).join("");
 }
 
+// Deli များကို သီးသန့်စနစ်တကျ ဖော်ပြပေးရန်
 function renderDelis(delis) {
     const container = document.getElementById("deliContainer");
     if (!container) return;
@@ -236,7 +240,6 @@ function renderDelis(delis) {
     }
 
     container.innerHTML = delis.map(deli => {
-        // Supabase က deli_name နဲ့ fees ဖြစ်နေတာကို ဖမ်းပေးခြင်း
         const deliName = deli.deli_name || deli.name || "Deli";
         const deliFee = deli.fees !== undefined ? deli.fees : (deli.fee || 1000);
         let deliImg = deli.image_url || deli.image || '';
@@ -448,7 +451,7 @@ async function submitOrder() {
     };
 
     try {
-        const res = await fetch(`${API_BASE_URL}/orders`, {
+        const res = + await fetch(`${API_BASE_URL}/orders`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -475,8 +478,7 @@ async function submitOrder() {
 }
 
 function showErrorMessage() {
-    const containers = ["menuContainer", "shopContainer", "deliContainer"];
-    containers.forEach(id => {
+    ["menuContainer", "shopContainer", "deliContainer"].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.innerHTML = "<p class='text-red-500 text-sm p-4'>ဒေတာရယူ၍ မရပါ။ ကျေးဇူးပြု၍ ခဏနေ ပြန်ကြိုးစားပါ။</p>";
@@ -484,15 +486,11 @@ function showErrorMessage() {
     });
 }
 
-function playTapSound() {}
-
 function showToast(message) {
     const toast = document.createElement("div");
     toast.className = "fixed bottom-5 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs px-4 py-2 rounded-full shadow-lg z-50 transition-all opacity-90";
     toast.style.zIndex = "9999";
     toast.innerText = message;
     document.body.appendChild(toast);
-    setTimeout(() => {
-        toast.remove();
-    }, 2000);
+    setTimeout(() => { toast.remove(); }, 2000);
 }
